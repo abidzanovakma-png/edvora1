@@ -70,6 +70,8 @@ function Index() {
   const [targetCountries, setTargetCountries] = useState<string[]>([...countries]);
   const [noTest, setNoTest] = useState<Record<number, boolean>>({});
   const [values, setValues] = useState<string[]>(Array(fields.length).fill(""));
+  const [appliedCountries, setAppliedCountries] = useState<string[]>([...countries]);
+  const [appliedIelts, setAppliedIelts] = useState<number | null>(null);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("ru");
@@ -81,18 +83,31 @@ function Index() {
         );
       return (
         matchesQuery &&
+        appliedCountries.includes(program.country) &&
+        (appliedIelts === null || program.ieltsMin <= appliedIelts) &&
         (country === "Все страны" || program.country === country) &&
         (level === "Все уровни" || program.level === level) &&
         (language === "Все языки" || program.language === language)
       );
     });
-  }, [query, country, level, language]);
+  }, [query, country, level, language, appliedCountries, appliedIelts]);
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   const resetProfile = () => {
     setValues(Array(fields.length).fill(""));
     setNoTest({});
     setTargetCountries([...countries]);
+    setAppliedCountries([...countries]);
+    setAppliedIelts(null);
+    setCountry("Все страны");
+  };
+
+  const applyProfile = () => {
+    const enteredIelts = Number.parseFloat((values[1] ?? "").replace(",", "."));
+    setAppliedCountries(targetCountries);
+    setAppliedIelts(noTest[1] || !Number.isFinite(enteredIelts) ? null : enteredIelts);
+    setCountry("Все страны");
+    scrollTo("programs");
   };
 
   return (
@@ -172,7 +187,7 @@ function Index() {
               ))}
             </div>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Button onClick={() => { setCountry(targetCountries.length === 1 ? (targetCountries[0] ?? "Все страны") : "Все страны"); scrollTo("programs"); }}>Подобрать программы</Button>
+              <Button onClick={applyProfile}>Подобрать программы</Button>
               <Button variant="outline" onClick={resetProfile}>Сбросить</Button>
             </div>
           </div>
