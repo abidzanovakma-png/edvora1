@@ -172,7 +172,7 @@ function Index() {
               ))}
             </div>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Button onClick={() => { setCountry(targetCountries.length === 1 ? targetCountries[0] : "Все страны"); scrollTo("programs"); }}>Подобрать программы</Button>
+              <Button onClick={() => { setCountry(targetCountries.length === 1 ? (targetCountries[0] ?? "Все страны") : "Все страны"); scrollTo("programs"); }}>Подобрать программы</Button>
               <Button variant="outline" onClick={resetProfile}>Сбросить</Button>
             </div>
           </div>
