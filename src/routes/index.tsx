@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 
 type Program = (typeof programsData)[number];
+type AppliedProfile = { values: string[]; noTest: Record<number, boolean> };
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -61,6 +62,33 @@ const fields = [
   ["Бюджет, USD / год", "8000", false],
 ] as const;
 
+function numericValue(value: string) {
+  const parsed = Number.parseFloat(value.trim().replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function matchesMinimum(value: string, skipped: boolean | undefined, minimum: number | null) {
+  const entered = numericValue(value);
+  return skipped || entered === null || minimum === null || entered >= minimum;
+}
+
+function matchesLanguageExam(program: Program, examValue: string, scoreValue: string, skipped: boolean | undefined) {
+  if (skipped || !examValue.trim()) return true;
+  const requirement = program.languageExamRequirement.toLocaleLowerCase("ru");
+  if (/не требуется|рекомендуется|альтернатив/.test(requirement)) return true;
+  const exam = examValue.trim().toLocaleLowerCase("ru").split(/\s+/)[0] ?? "";
+  if (!exam || !requirement.includes(exam)) return true;
+  const required = numericValue(requirement.slice(requirement.indexOf(exam) + exam.length));
+  return matchesMinimum(scoreValue, false, required);
+}
+
+function matchesSupplementaryExam(program: Program, value: string) {
+  const exam = value.trim().toLocaleLowerCase("ru").split(/[\s\d]+/)[0] ?? "";
+  if (!exam) return true;
+  const requirements = program.standardizedTests.toLocaleLowerCase("ru");
+  return !requirements || requirements.includes(exam) || !/обязател/.test(requirements);
+}
+
 function Index() {
   const [query, setQuery] = useState("");
   const [country, setCountry] = useState("Все страны");
@@ -71,7 +99,7 @@ function Index() {
   const [noTest, setNoTest] = useState<Record<number, boolean>>({});
   const [values, setValues] = useState<string[]>(Array(fields.length).fill(""));
   const [appliedCountries, setAppliedCountries] = useState<string[]>([...countries]);
-  const [appliedIelts, setAppliedIelts] = useState<number | null>(null);
+  const [appliedProfile, setAppliedProfile] = useState<AppliedProfile | null>(null);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("ru");
@@ -81,16 +109,25 @@ function Index() {
         [program.university, program.program, program.city].some((value) =>
           value.toLocaleLowerCase("ru").includes(needle),
         );
+      const profileMatches = !appliedProfile || (
+        matchesMinimum(appliedProfile.values[0] ?? "", appliedProfile.noTest[0], program.gpaMin) &&
+        matchesMinimum(appliedProfile.values[1] ?? "", appliedProfile.noTest[1], program.ieltsMin) &&
+        matchesMinimum(appliedProfile.values[2] ?? "", appliedProfile.noTest[2], program.toeflMin) &&
+        matchesMinimum(appliedProfile.values[3] ?? "", appliedProfile.noTest[3], null) &&
+        matchesLanguageExam(program, appliedProfile.values[4] ?? "", appliedProfile.values[5] ?? "", appliedProfile.noTest[4]) &&
+        matchesSupplementaryExam(program, appliedProfile.values[6] ?? "") &&
+        (numericValue(appliedProfile.values[7] ?? "") === null || program.costMin <= (numericValue(appliedProfile.values[7] ?? "") ?? 0))
+      );
       return (
         matchesQuery &&
         appliedCountries.includes(program.country) &&
-        (appliedIelts === null || program.ieltsMin <= appliedIelts) &&
+        profileMatches &&
         (country === "Все страны" || program.country === country) &&
         (level === "Все уровни" || program.level === level) &&
         (language === "Все языки" || program.language === language)
       );
     });
-  }, [query, country, level, language, appliedCountries, appliedIelts]);
+  }, [query, country, level, language, appliedCountries, appliedProfile]);
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   const resetProfile = () => {
@@ -98,14 +135,13 @@ function Index() {
     setNoTest({});
     setTargetCountries([...countries]);
     setAppliedCountries([...countries]);
-    setAppliedIelts(null);
+    setAppliedProfile(null);
     setCountry("Все страны");
   };
 
   const applyProfile = () => {
-    const enteredIelts = Number.parseFloat((values[1] ?? "").replace(",", "."));
     setAppliedCountries(targetCountries);
-    setAppliedIelts(noTest[1] || !Number.isFinite(enteredIelts) ? null : enteredIelts);
+    setAppliedProfile({ values: [...values], noTest: { ...noTest } });
     setCountry("Все страны");
     scrollTo("programs");
   };
