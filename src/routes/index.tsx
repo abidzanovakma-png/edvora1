@@ -167,7 +167,7 @@ function Index() {
                     {label}
                     {togglable && <Button type="button" size="sm" variant={noTest[index] ? "secondary" : "outline"} className="h-6 shrink-0 rounded-full px-2 text-[10px] font-normal" aria-pressed={Boolean(noTest[index])} onClick={() => setNoTest((current) => ({ ...current, [index]: !current[index] }))}>нет теста</Button>}
                   </span>
-                  <Input value={values[index]} disabled={noTest[index]} placeholder={placeholder} onChange={(event) => setValues((current) => current.map((value, itemIndex) => itemIndex === index ? event.target.value : value))} />
+                  <Input value={values[index] ?? ""} disabled={noTest[index]} placeholder={placeholder} onChange={(event) => setValues((current) => current.map((value, itemIndex) => itemIndex === index ? event.target.value : value))} />
                 </label>
               ))}
             </div>
