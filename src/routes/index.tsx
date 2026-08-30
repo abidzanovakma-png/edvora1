@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   BadgeDollarSign,
-  CalendarDays,
   ChevronDown,
   CircleGauge,
+  ExternalLink,
+  Globe,
   GraduationCap,
   Languages,
   MapPin,
