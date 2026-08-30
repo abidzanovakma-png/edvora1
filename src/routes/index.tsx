@@ -247,10 +247,17 @@ function Index() {
                 </label>
               ))}
             </div>
+            <p className="mt-7 text-sm font-medium">Документы, готовые к подаче</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {([["motivation", "Мотивационное письмо"], ["recommendations", "Рекомендательные письма"], ["portfolio", "Портфолио"]] as const).map(([key, label]) => (
+                <Button key={key} size="sm" variant={docs[key] ? "secondary" : "outline"} aria-pressed={docs[key]} onClick={() => setDocs((current) => ({ ...current, [key]: !current[key] }))}>{label}</Button>
+              ))}
+            </div>
             <div className="mt-7 flex flex-wrap gap-3">
               <Button onClick={applyProfile}>Подобрать программы</Button>
               <Button variant="outline" onClick={resetProfile}>Сбросить</Button>
             </div>
+
           </div>
         </section>
 
