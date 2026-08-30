@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   BadgeDollarSign,
-  CalendarDays,
   ChevronDown,
   CircleGauge,
+  ExternalLink,
+  Globe,
   GraduationCap,
   Languages,
   MapPin,
@@ -269,10 +270,10 @@ function ProgramCard({ program, onOpen }: { program: Program; onOpen: () => void
   const rows = [
     [GraduationCap, "Уровень", program.level], [Languages, "Язык", program.language],
     [CircleGauge, "GPA", program.gpa], [null, "IELTS", program.ielts], [null, "TOEFL", program.toefl],
-    [BadgeDollarSign, "Стоимость", program.cost], [CalendarDays, "Дедлайн", program.deadline],
+    [BadgeDollarSign, "Стоимость", program.cost],
   ] as const;
   return <article className="card-elevate fade-up flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-card">
     <div className="border-b border-border/70 bg-muted/35 p-5"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
-    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl><div className="mt-auto pt-2"><Button className="w-full" variant="secondary" onClick={onOpen}>Подробнее</Button></div></div>
+    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl><a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="pt-2"><Button className="w-full" variant="secondary" onClick={onOpen}>Подробнее</Button></div></div>
   </article>;
 }
