@@ -15,6 +15,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import programsData from "@/data/programs.json";
+import { assess, statusLabels, type Assessment } from "@/lib/assessment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,7 +27,9 @@ import {
 } from "@/components/ui/dialog";
 
 type Program = (typeof programsData)[number];
-type AppliedProfile = { values: string[]; noTest: Record<number, boolean> };
+type Docs = { motivation: boolean; recommendations: boolean; portfolio: boolean };
+type AppliedProfile = { values: string[]; noTest: Record<number, boolean>; docs: Docs };
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -99,12 +102,13 @@ function Index() {
   const [targetCountries, setTargetCountries] = useState<string[]>([...countries]);
   const [noTest, setNoTest] = useState<Record<number, boolean>>({});
   const [values, setValues] = useState<string[]>(Array(fields.length).fill(""));
+  const [docs, setDocs] = useState<Docs>({ motivation: false, recommendations: false, portfolio: false });
   const [appliedCountries, setAppliedCountries] = useState<string[]>([...countries]);
   const [appliedProfile, setAppliedProfile] = useState<AppliedProfile | null>(null);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("ru");
-    return programsData.filter((program) => {
+    const list = programsData.filter((program) => {
       const matchesQuery =
         !needle ||
         [program.university, program.program, program.city].some((value) =>
@@ -128,12 +132,31 @@ function Index() {
         (language === "Все языки" || program.language === language)
       );
     });
+
+    const scored = list.map((program) => ({
+      program,
+      assessment: appliedProfile
+        ? assess(program, {
+            gpa: appliedProfile.noTest[0] ? "" : appliedProfile.values[0] ?? "",
+            ielts: appliedProfile.noTest[1] ? "" : appliedProfile.values[1] ?? "",
+            toefl: appliedProfile.noTest[2] ? "" : appliedProfile.values[2] ?? "",
+            sat: appliedProfile.noTest[3] ? "" : appliedProfile.values[3] ?? "",
+            ...appliedProfile.docs,
+          })
+        : null,
+    }));
+
+    const order = { Safety: 0, Match: 1, Reach: 2 } as const;
+    return scored.sort((a, b) =>
+      a.assessment && b.assessment ? order[a.assessment.category] - order[b.assessment.category] : 0,
+    );
   }, [query, country, level, language, appliedCountries, appliedProfile]);
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   const resetProfile = () => {
     setValues(Array(fields.length).fill(""));
     setNoTest({});
+    setDocs({ motivation: false, recommendations: false, portfolio: false });
     setTargetCountries([...countries]);
     setAppliedCountries([...countries]);
     setAppliedProfile(null);
@@ -142,9 +165,10 @@ function Index() {
 
   const applyProfile = () => {
     setAppliedCountries(targetCountries);
-    setAppliedProfile({ values: [...values], noTest: { ...noTest } });
+    setAppliedProfile({ values: [...values], noTest: { ...noTest }, docs: { ...docs } });
     setCountry("Все страны");
     scrollTo("programs");
+
   };
 
   return (
@@ -223,10 +247,17 @@ function Index() {
                 </label>
               ))}
             </div>
+            <p className="mt-7 text-sm font-medium">Документы, готовые к подаче</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {([["motivation", "Мотивационное письмо"], ["recommendations", "Рекомендательные письма"], ["portfolio", "Портфолио"]] as const).map(([key, label]) => (
+                <Button key={key} size="sm" variant={docs[key] ? "secondary" : "outline"} aria-pressed={docs[key]} onClick={() => setDocs((current) => ({ ...current, [key]: !current[key] }))}>{label}</Button>
+              ))}
+            </div>
             <div className="mt-7 flex flex-wrap gap-3">
               <Button onClick={applyProfile}>Подобрать программы</Button>
               <Button variant="outline" onClick={resetProfile}>Сбросить</Button>
             </div>
+
           </div>
         </section>
 
@@ -242,7 +273,7 @@ function Index() {
             <FilterSelect value={country} onChange={setCountry} options={["Все страны", ...countries]} label="Страна" />
           </div>
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((program, index) => <ProgramCard key={`${program.university}-${program.program}-${index}`} program={program} onOpen={() => setSelected(program)} />)}
+            {filtered.map(({ program, assessment }, index) => <ProgramCard key={`${program.university}-${program.program}-${index}`} program={program} assessment={assessment} onOpen={() => setSelected(program)} />)}
           </div>
         </section>
       </main>
@@ -266,14 +297,28 @@ function FilterSelect({ value, onChange, options, label }: { value: string; onCh
   return <label className="relative"><span className="sr-only">{label}</span><select className="h-9 w-full appearance-none rounded-md border border-input bg-background px-3 pr-8 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring" value={value} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option}>{option}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /></label>;
 }
 
-function ProgramCard({ program, onOpen }: { program: Program; onOpen: () => void }) {
+const categoryStyles = {
+  Safety: "bg-accent text-accent-foreground",
+  Match: "bg-secondary text-secondary-foreground",
+  Reach: "bg-muted text-foreground",
+} as const;
+
+const statusStyles = {
+  pass: "text-accent",
+  below: "text-destructive",
+  unknown: "text-muted-foreground",
+  skip: "text-muted-foreground/70",
+} as const;
+
+function ProgramCard({ program, assessment, onOpen }: { program: Program; assessment: Assessment | null; onOpen: () => void }) {
   const rows = [
     [GraduationCap, "Уровень", program.level], [Languages, "Язык", program.language],
     [CircleGauge, "GPA", program.gpa], [null, "IELTS", program.ielts], [null, "TOEFL", program.toefl],
     [BadgeDollarSign, "Стоимость", program.cost],
   ] as const;
   return <article className="card-elevate fade-up flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-card">
-    <div className="border-b border-border/70 bg-muted/35 p-5"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
-    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl><a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="pt-2"><Button className="w-full" variant="secondary" onClick={onOpen}>Подробнее</Button></div></div>
+    <div className="border-b border-border/70 bg-muted/35 p-5"><div className="flex items-center justify-between gap-2"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span>{assessment && <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${categoryStyles[assessment.category]}`}>{assessment.category}</span>}</div><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
+    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl>{assessment && <div className="rounded-lg border border-border/70 bg-muted/25 p-3"><p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Оценка профиля</p><dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p></div>}<a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="pt-2"><Button className="w-full" variant="secondary" onClick={onOpen}>Подробнее</Button></div></div>
+
   </article>;
 }
