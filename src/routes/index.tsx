@@ -269,7 +269,7 @@ function ProgramCard({ program, onOpen }: { program: Program; onOpen: () => void
   const rows = [
     [GraduationCap, "Уровень", program.level], [Languages, "Язык", program.language],
     [CircleGauge, "GPA", program.gpa], [null, "IELTS", program.ielts], [null, "TOEFL", program.toefl],
-    [BadgeDollarSign, "Стоимость", program.cost], [CalendarDays, "Дедлайн", program.deadline],
+    [BadgeDollarSign, "Стоимость", program.cost],
   ] as const;
   return <article className="card-elevate fade-up flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-card">
     <div className="border-b border-border/70 bg-muted/35 p-5"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
