@@ -15,6 +15,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import programsData from "@/data/programs.json";
+import { assess, statusLabels, type Assessment } from "@/lib/assessment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,7 +27,9 @@ import {
 } from "@/components/ui/dialog";
 
 type Program = (typeof programsData)[number];
-type AppliedProfile = { values: string[]; noTest: Record<number, boolean> };
+type Docs = { motivation: boolean; recommendations: boolean; portfolio: boolean };
+type AppliedProfile = { values: string[]; noTest: Record<number, boolean>; docs: Docs };
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
