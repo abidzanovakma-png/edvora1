@@ -169,7 +169,7 @@ function Index() {
           <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 md:grid-cols-[1.2fr_1fr] md:items-center md:py-20">
             <div className="fade-up">
               <span className="inline-flex rounded-full bg-primary-foreground px-3 py-1 text-xs font-semibold text-primary">
-                34 программ · 3 страны
+                {programsData.length} университетов · 3 страны
               </span>
               <h1 className="mt-6 max-w-2xl font-display text-4xl font-bold leading-tight md:text-5xl">
                 Подбор университета по вашим реальным показателям
