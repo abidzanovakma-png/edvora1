@@ -102,12 +102,13 @@ function Index() {
   const [targetCountries, setTargetCountries] = useState<string[]>([...countries]);
   const [noTest, setNoTest] = useState<Record<number, boolean>>({});
   const [values, setValues] = useState<string[]>(Array(fields.length).fill(""));
+  const [docs, setDocs] = useState<Docs>({ motivation: false, recommendations: false, portfolio: false });
   const [appliedCountries, setAppliedCountries] = useState<string[]>([...countries]);
   const [appliedProfile, setAppliedProfile] = useState<AppliedProfile | null>(null);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("ru");
-    return programsData.filter((program) => {
+    const list = programsData.filter((program) => {
       const matchesQuery =
         !needle ||
         [program.university, program.program, program.city].some((value) =>
@@ -131,12 +132,31 @@ function Index() {
         (language === "Все языки" || program.language === language)
       );
     });
+
+    const scored = list.map((program) => ({
+      program,
+      assessment: appliedProfile
+        ? assess(program, {
+            gpa: appliedProfile.noTest[0] ? "" : appliedProfile.values[0] ?? "",
+            ielts: appliedProfile.noTest[1] ? "" : appliedProfile.values[1] ?? "",
+            toefl: appliedProfile.noTest[2] ? "" : appliedProfile.values[2] ?? "",
+            sat: appliedProfile.noTest[3] ? "" : appliedProfile.values[3] ?? "",
+            ...appliedProfile.docs,
+          })
+        : null,
+    }));
+
+    const order = { Safety: 0, Match: 1, Reach: 2 } as const;
+    return scored.sort((a, b) =>
+      a.assessment && b.assessment ? order[a.assessment.category] - order[b.assessment.category] : 0,
+    );
   }, [query, country, level, language, appliedCountries, appliedProfile]);
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   const resetProfile = () => {
     setValues(Array(fields.length).fill(""));
     setNoTest({});
+    setDocs({ motivation: false, recommendations: false, portfolio: false });
     setTargetCountries([...countries]);
     setAppliedCountries([...countries]);
     setAppliedProfile(null);
@@ -145,9 +165,10 @@ function Index() {
 
   const applyProfile = () => {
     setAppliedCountries(targetCountries);
-    setAppliedProfile({ values: [...values], noTest: { ...noTest } });
+    setAppliedProfile({ values: [...values], noTest: { ...noTest }, docs: { ...docs } });
     setCountry("Все страны");
     scrollTo("programs");
+
   };
 
   return (
