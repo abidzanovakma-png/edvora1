@@ -273,7 +273,7 @@ function Index() {
             <FilterSelect value={country} onChange={setCountry} options={["Все страны", ...countries]} label="Страна" />
           </div>
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((program, index) => <ProgramCard key={`${program.university}-${program.program}-${index}`} program={program} onOpen={() => setSelected(program)} />)}
+            {filtered.map(({ program, assessment }, index) => <ProgramCard key={`${program.university}-${program.program}-${index}`} program={program} assessment={assessment} onOpen={() => setSelected(program)} />)}
           </div>
         </section>
       </main>
