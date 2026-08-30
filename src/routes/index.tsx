@@ -297,14 +297,28 @@ function FilterSelect({ value, onChange, options, label }: { value: string; onCh
   return <label className="relative"><span className="sr-only">{label}</span><select className="h-9 w-full appearance-none rounded-md border border-input bg-background px-3 pr-8 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring" value={value} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option key={option}>{option}</option>)}</select><ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /></label>;
 }
 
-function ProgramCard({ program, onOpen }: { program: Program; onOpen: () => void }) {
+const categoryStyles = {
+  Safety: "bg-accent text-accent-foreground",
+  Match: "bg-secondary text-secondary-foreground",
+  Reach: "bg-muted text-foreground",
+} as const;
+
+const statusStyles = {
+  pass: "text-accent",
+  below: "text-destructive",
+  unknown: "text-muted-foreground",
+  skip: "text-muted-foreground/70",
+} as const;
+
+function ProgramCard({ program, assessment, onOpen }: { program: Program; assessment: Assessment | null; onOpen: () => void }) {
   const rows = [
     [GraduationCap, "Уровень", program.level], [Languages, "Язык", program.language],
     [CircleGauge, "GPA", program.gpa], [null, "IELTS", program.ielts], [null, "TOEFL", program.toefl],
     [BadgeDollarSign, "Стоимость", program.cost],
   ] as const;
   return <article className="card-elevate fade-up flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-card">
-    <div className="border-b border-border/70 bg-muted/35 p-5"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
-    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl><a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="pt-2"><Button className="w-full" variant="secondary" onClick={onOpen}>Подробнее</Button></div></div>
+    <div className="border-b border-border/70 bg-muted/35 p-5"><div className="flex items-center justify-between gap-2"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span>{assessment && <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${categoryStyles[assessment.category]}`}>{assessment.category}</span>}</div><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
+    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl>{assessment && <div className="rounded-lg border border-border/70 bg-muted/25 p-3"><p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Оценка профиля</p><dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p></div>}<a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="pt-2"><Button className="w-full" variant="secondary" onClick={onOpen}>Подробнее</Button></div></div>
+
   </article>;
 }
