@@ -7,6 +7,7 @@ export type Assessment = {
   category: Category;
   comment: string;
   criteria: Criterion[];
+  recommendations: string[];
 };
 
 export type ProfileInput = {
