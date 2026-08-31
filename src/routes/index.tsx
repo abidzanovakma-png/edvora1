@@ -76,15 +76,18 @@ function matchesMinimum(value: string, skipped: boolean | undefined, minimum: nu
   return skipped || entered === null || minimum === null || entered >= minimum;
 }
 
-function matchesLanguageExam(program: Program, examValue: string, scoreValue: string, skipped: boolean | undefined) {
+function matchesLanguageExam(program: Program, examValue: string, skipped: boolean | undefined) {
   if (skipped || !examValue.trim()) return true;
   const requirement = program.languageExamRequirement.toLocaleLowerCase("ru");
   if (/не требуется|рекомендуется|альтернатив/.test(requirement)) return true;
-  const exam = examValue.trim().toLocaleLowerCase("ru").split(/\s+/)[0] ?? "";
+  const input = examValue.trim().toLocaleLowerCase("ru");
+  const exam = input.split(/[\s\d]+/)[0] ?? "";
   if (!exam || !requirement.includes(exam)) return true;
   const required = numericValue(requirement.slice(requirement.indexOf(exam) + exam.length));
-  return matchesMinimum(scoreValue, false, required);
+  const scored = input.slice(exam.length);
+  return matchesMinimum(scored, false, required);
 }
+
 
 function matchesSupplementaryExam(program: Program, value: string) {
   const exam = value.trim().toLocaleLowerCase("ru").split(/[\s\d]+/)[0] ?? "";
