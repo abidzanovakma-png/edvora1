@@ -60,10 +60,10 @@ const fields = [
   ["IELTS Academic", "6.5", true],
   ["TOEFL iBT", "92", true],
   ["SAT / ACT", "1350", true],
-  ["Языковой экзамен (HSK/TOPIK/EJU)", "HSK", true],
-  ["Балл языкового экзамена", "4", false],
+  ["Языковой экзамен (HSK/TOPIK/EJU)", "HSK 4", true],
   ["Доп. экзамены (IB, A-Level, ЕГЭ)", "IB 36", false],
   ["Бюджет, USD / год", "8000", false],
+
 ] as const;
 
 function numericValue(value: string) {
