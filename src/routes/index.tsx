@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   BadgeDollarSign,
+  BookOpen,
+
   ChevronDown,
   CircleGauge,
   ExternalLink,
@@ -60,10 +62,10 @@ const fields = [
   ["IELTS Academic", "6.5", true],
   ["TOEFL iBT", "92", true],
   ["SAT / ACT", "1350", true],
-  ["Языковой экзамен (HSK/TOPIK/EJU)", "HSK", true],
-  ["Балл языкового экзамена", "4", false],
+  ["Языковой экзамен (HSK/TOPIK/EJU)", "HSK 4", true],
   ["Доп. экзамены (IB, A-Level, ЕГЭ)", "IB 36", false],
   ["Бюджет, USD / год", "8000", false],
+
 ] as const;
 
 function numericValue(value: string) {
@@ -76,15 +78,18 @@ function matchesMinimum(value: string, skipped: boolean | undefined, minimum: nu
   return skipped || entered === null || minimum === null || entered >= minimum;
 }
 
-function matchesLanguageExam(program: Program, examValue: string, scoreValue: string, skipped: boolean | undefined) {
+function matchesLanguageExam(program: Program, examValue: string, skipped: boolean | undefined) {
   if (skipped || !examValue.trim()) return true;
   const requirement = program.languageExamRequirement.toLocaleLowerCase("ru");
   if (/не требуется|рекомендуется|альтернатив/.test(requirement)) return true;
-  const exam = examValue.trim().toLocaleLowerCase("ru").split(/\s+/)[0] ?? "";
+  const input = examValue.trim().toLocaleLowerCase("ru");
+  const exam = input.split(/[\s\d]+/)[0] ?? "";
   if (!exam || !requirement.includes(exam)) return true;
   const required = numericValue(requirement.slice(requirement.indexOf(exam) + exam.length));
-  return matchesMinimum(scoreValue, false, required);
+  const scored = input.slice(exam.length);
+  return matchesMinimum(scored, false, required);
 }
+
 
 function matchesSupplementaryExam(program: Program, value: string) {
   const exam = value.trim().toLocaleLowerCase("ru").split(/[\s\d]+/)[0] ?? "";
@@ -98,6 +103,7 @@ function Index() {
   const [country, setCountry] = useState("Все страны");
   const [level, setLevel] = useState("Все уровни");
   const [language, setLanguage] = useState("Все языки");
+  const [major, setMajor] = useState("Все специальности");
   const [selected, setSelected] = useState<Program | null>(null);
   const [targetCountries, setTargetCountries] = useState<string[]>([...countries]);
   const [noTest, setNoTest] = useState<Record<number, boolean>>({});
@@ -119,9 +125,9 @@ function Index() {
         matchesMinimum(appliedProfile.values[1] ?? "", appliedProfile.noTest[1], program.ieltsMin) &&
         matchesMinimum(appliedProfile.values[2] ?? "", appliedProfile.noTest[2], program.toeflMin) &&
         matchesMinimum(appliedProfile.values[3] ?? "", appliedProfile.noTest[3], null) &&
-        matchesLanguageExam(program, appliedProfile.values[4] ?? "", appliedProfile.values[5] ?? "", appliedProfile.noTest[4]) &&
-        matchesSupplementaryExam(program, appliedProfile.values[6] ?? "") &&
-        (numericValue(appliedProfile.values[7] ?? "") === null || program.costMin <= (numericValue(appliedProfile.values[7] ?? "") ?? 0))
+        matchesLanguageExam(program, appliedProfile.values[4] ?? "", appliedProfile.noTest[4]) &&
+        matchesSupplementaryExam(program, appliedProfile.values[5] ?? "") &&
+        (numericValue(appliedProfile.values[6] ?? "") === null || program.costMin <= (numericValue(appliedProfile.values[6] ?? "") ?? 0))
       );
       return (
         matchesQuery &&
@@ -129,7 +135,8 @@ function Index() {
         profileMatches &&
         (country === "Все страны" || program.country === country) &&
         (level === "Все уровни" || program.level === level) &&
-        (language === "Все языки" || program.language === language)
+        (language === "Все языки" || program.languages.includes(language)) &&
+        (major === "Все специальности" || program.majors.includes(major))
       );
     });
 
@@ -150,7 +157,8 @@ function Index() {
     return scored.sort((a, b) =>
       a.assessment && b.assessment ? order[a.assessment.category] - order[b.assessment.category] : 0,
     );
-  }, [query, country, level, language, appliedCountries, appliedProfile]);
+  }, [query, country, level, language, major, appliedCountries, appliedProfile]);
+
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   const resetProfile = () => {
@@ -161,6 +169,9 @@ function Index() {
     setAppliedCountries([...countries]);
     setAppliedProfile(null);
     setCountry("Все страны");
+    setLanguage("Все языки");
+    setMajor("Все специальности");
+
   };
 
   const applyProfile = () => {
@@ -269,8 +280,10 @@ function Index() {
           <div className="mb-6 grid gap-3 rounded-xl border border-border/70 bg-card p-4 md:grid-cols-4">
             <label className="relative md:col-span-2"><span className="sr-only">Поиск</span><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск по университету, программе, городу" /></label>
             <FilterSelect value={level} onChange={setLevel} options={["Все уровни", ...new Set(programsData.map((program) => program.level))]} label="Уровень" />
-            <FilterSelect value={language} onChange={setLanguage} options={["Все языки", ...new Set(programsData.map((program) => program.language))]} label="Язык" />
+            <FilterSelect value={language} onChange={setLanguage} options={["Все языки", "Английский", "Китайский", "Японский", "Корейский"]} label="Язык обучения" />
             <FilterSelect value={country} onChange={setCountry} options={["Все страны", ...countries]} label="Страна" />
+            <FilterSelect value={major} onChange={setMajor} options={["Все специальности", ...[...new Set(programsData.flatMap((program) => program.majors))].sort((a, b) => a.localeCompare(b, "ru"))]} label="Специальность" />
+
           </div>
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map(({ program, assessment }, index) => <ProgramCard key={`${program.university}-${program.program}-${index}`} program={program} assessment={assessment} onOpen={() => setSelected(program)} />)}
@@ -312,10 +325,12 @@ const statusStyles = {
 
 function ProgramCard({ program, assessment, onOpen }: { program: Program; assessment: Assessment | null; onOpen: () => void }) {
   const rows = [
-    [GraduationCap, "Уровень", program.level], [Languages, "Язык", program.language],
+    [GraduationCap, "Уровень", program.level], [Languages, "Языки обучения", program.languages.join(", ")],
+    [BookOpen, "Специальности", program.majors.join(", ")],
     [CircleGauge, "GPA", program.gpa], [null, "IELTS", program.ielts], [null, "TOEFL", program.toefl],
     [BadgeDollarSign, "Стоимость", program.cost],
   ] as const;
+
   return <article className="card-elevate fade-up flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-card">
     <div className="border-b border-border/70 bg-muted/35 p-5"><div className="flex items-center justify-between gap-2"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span>{assessment && <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${categoryStyles[assessment.category]}`}>{assessment.category}</span>}</div><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
     <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl>{assessment && <div className="rounded-lg border border-border/70 bg-muted/25 p-3"><p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Оценка профиля</p><dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p></div>}<a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="pt-2"><Button className="w-full" variant="secondary" onClick={onOpen}>Подробнее</Button></div></div>
