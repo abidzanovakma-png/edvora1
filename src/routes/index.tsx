@@ -325,7 +325,7 @@ const statusStyles = {
 
 function ProgramCard({ program, assessment, onOpen }: { program: Program; assessment: Assessment | null; onOpen: () => void }) {
   const rows = [
-    [GraduationCap, "Уровень", program.level], [Languages, "Языки обучения", program.languages.join(", ")],
+    [GraduationCap, "Уровень", program.levels.join(", ")], [Languages, "Языки обучения", program.languages.join(", ")],
     [BookOpen, "Специальности", program.majors.join(", ")],
     [CircleGauge, "GPA", program.gpa], [null, "IELTS", program.ielts], [null, "TOEFL", program.toefl],
     [BadgeDollarSign, "Стоимость", program.cost],
