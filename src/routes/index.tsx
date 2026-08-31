@@ -101,6 +101,7 @@ function Index() {
   const [country, setCountry] = useState("Все страны");
   const [level, setLevel] = useState("Все уровни");
   const [language, setLanguage] = useState("Все языки");
+  const [major, setMajor] = useState("Все специальности");
   const [selected, setSelected] = useState<Program | null>(null);
   const [targetCountries, setTargetCountries] = useState<string[]>([...countries]);
   const [noTest, setNoTest] = useState<Record<number, boolean>>({});
@@ -122,9 +123,9 @@ function Index() {
         matchesMinimum(appliedProfile.values[1] ?? "", appliedProfile.noTest[1], program.ieltsMin) &&
         matchesMinimum(appliedProfile.values[2] ?? "", appliedProfile.noTest[2], program.toeflMin) &&
         matchesMinimum(appliedProfile.values[3] ?? "", appliedProfile.noTest[3], null) &&
-        matchesLanguageExam(program, appliedProfile.values[4] ?? "", appliedProfile.values[5] ?? "", appliedProfile.noTest[4]) &&
-        matchesSupplementaryExam(program, appliedProfile.values[6] ?? "") &&
-        (numericValue(appliedProfile.values[7] ?? "") === null || program.costMin <= (numericValue(appliedProfile.values[7] ?? "") ?? 0))
+        matchesLanguageExam(program, appliedProfile.values[4] ?? "", appliedProfile.noTest[4]) &&
+        matchesSupplementaryExam(program, appliedProfile.values[5] ?? "") &&
+        (numericValue(appliedProfile.values[6] ?? "") === null || program.costMin <= (numericValue(appliedProfile.values[6] ?? "") ?? 0))
       );
       return (
         matchesQuery &&
@@ -132,7 +133,8 @@ function Index() {
         profileMatches &&
         (country === "Все страны" || program.country === country) &&
         (level === "Все уровни" || program.level === level) &&
-        (language === "Все языки" || program.language === language)
+        (language === "Все языки" || program.languages.includes(language)) &&
+        (major === "Все специальности" || program.majors.includes(major))
       );
     });
 
@@ -153,7 +155,8 @@ function Index() {
     return scored.sort((a, b) =>
       a.assessment && b.assessment ? order[a.assessment.category] - order[b.assessment.category] : 0,
     );
-  }, [query, country, level, language, appliedCountries, appliedProfile]);
+  }, [query, country, level, language, major, appliedCountries, appliedProfile]);
+
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   const resetProfile = () => {
