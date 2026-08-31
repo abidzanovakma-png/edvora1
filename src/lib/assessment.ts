@@ -7,6 +7,7 @@ export type Assessment = {
   category: Category;
   comment: string;
   criteria: Criterion[];
+  recommendations: string[];
 };
 
 export type ProfileInput = {
@@ -109,9 +110,12 @@ export function assess(program: ProgramLike, profile: ProfileInput): Assessment 
   ];
 
   const checked = criteria.filter((item) => item.status !== "skip");
-  const below = checked.filter((item) => item.status === "below").length;
-  const unknown = checked.filter((item) => item.status === "unknown").length;
+  const below = checked.filter((item) => item.status === "below");
+  const unknown = checked.filter((item) => item.status === "unknown");
+  const issues = below.length + unknown.length;
   const { tier, label } = rankTier(program.rank);
+
+  const importantBelow = below.some((item) => ["GPA", "IELTS", "TOEFL", "SAT / ACT"].includes(item.label));
 
   const margins = [
     program.gpaMin !== null && num(profile.gpa) !== null ? (num(profile.gpa)! - program.gpaMin) / Math.max(program.gpaMin, 1) : null,
@@ -120,12 +124,26 @@ export function assess(program: ProgramLike, profile: ProfileInput): Assessment 
   ].filter((value): value is number => value !== null);
   const strongProfile = margins.length > 0 && margins.every((value) => value >= 0.08);
 
+  // Правила из документа «Движок оценки»:
+  // Reach — важные критерии ниже минимума, Top-50 или более одного проблемного критерия.
+  // Safety — все критерии «Проходит» и профиль заметно выше минимума при невысокой конкурсности.
+  // Match — большинство требований выполнено, допускается не более одного «Ниже требований»/«Нет данных».
   let category: Category;
-  if (below > 0) category = "Reach";
-  else if (tier === "top50") category = "Reach";
-  else if (unknown > 1) category = "Reach";
-  else if (unknown === 0 && strongProfile && tier === "low") category = "Safety";
+  if (tier === "top50" || importantBelow || issues > 1) category = "Reach";
+  else if (issues === 0 && strongProfile && tier !== "mid") category = "Safety";
   else category = "Match";
+
+  const recommendations = [
+    ...below.map((item) =>
+      item.label === "GPA" || item.label === "IELTS" || item.label === "TOEFL" || item.label === "SAT / ACT"
+        ? `Повысьте показатель ${item.label}: ${item.note.toLocaleLowerCase("ru")}.`
+        : `Подготовьте: ${item.label.toLocaleLowerCase("ru")} — требуется университетом.`,
+    ),
+    ...unknown.map((item) => `Укажите данные по критерию «${item.label}» для точной оценки.`),
+  ];
+  if (tier === "top50" && recommendations.length === 0) {
+    recommendations.push("Университет входит в Top-50: усильте профиль внеучебными достижениями и сильным мотивационным письмом.");
+  }
 
   const comment =
     category === "Safety"
@@ -134,5 +152,5 @@ export function assess(program: ProgramLike, profile: ProfileInput): Assessment 
         ? "Ваш профиль соответствует требованиям университета. Шансы поступления хорошие."
         : "Университет является амбициозным вариантом. Для повышения вероятности поступления рекомендуется улучшить отдельные показатели.";
 
-  return { category, comment: `${comment} (${label})`, criteria };
+  return { category, comment: `${comment} (${label})`, criteria, recommendations };
 }
