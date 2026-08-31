@@ -134,7 +134,7 @@ function Index() {
         appliedCountries.includes(program.country) &&
         profileMatches &&
         (country === "Все страны" || program.country === country) &&
-        (level === "Все уровни" || program.level === level) &&
+        (level === "Все уровни" || program.levels.includes(level)) &&
         (language === "Все языки" || program.languages.includes(language)) &&
         (major === "Все специальности" || program.majors.includes(major))
       );
