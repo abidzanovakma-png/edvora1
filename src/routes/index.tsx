@@ -167,6 +167,9 @@ function Index() {
     setAppliedCountries([...countries]);
     setAppliedProfile(null);
     setCountry("Все страны");
+    setLanguage("Все языки");
+    setMajor("Все специальности");
+
   };
 
   const applyProfile = () => {
