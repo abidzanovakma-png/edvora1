@@ -278,8 +278,10 @@ function Index() {
           <div className="mb-6 grid gap-3 rounded-xl border border-border/70 bg-card p-4 md:grid-cols-4">
             <label className="relative md:col-span-2"><span className="sr-only">Поиск</span><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск по университету, программе, городу" /></label>
             <FilterSelect value={level} onChange={setLevel} options={["Все уровни", ...new Set(programsData.map((program) => program.level))]} label="Уровень" />
-            <FilterSelect value={language} onChange={setLanguage} options={["Все языки", ...new Set(programsData.map((program) => program.language))]} label="Язык" />
+            <FilterSelect value={language} onChange={setLanguage} options={["Все языки", "Английский", "Китайский", "Японский", "Корейский"]} label="Язык обучения" />
             <FilterSelect value={country} onChange={setCountry} options={["Все страны", ...countries]} label="Страна" />
+            <FilterSelect value={major} onChange={setMajor} options={["Все специальности", ...[...new Set(programsData.flatMap((program) => program.majors))].sort((a, b) => a.localeCompare(b, "ru"))]} label="Специальность" />
+
           </div>
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map(({ program, assessment }, index) => <ProgramCard key={`${program.university}-${program.program}-${index}`} program={program} assessment={assessment} onOpen={() => setSelected(program)} />)}
