@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ProgramDetails } from "@/components/ProgramDetails";
 
 type Program = (typeof programsData)[number];
 type Docs = { motivation: boolean; recommendations: boolean; portfolio: boolean };
