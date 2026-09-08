@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ProgramDetails } from "@/components/ProgramDetails";
 
 type Program = (typeof programsData)[number];
 type Docs = { motivation: boolean; recommendations: boolean; portfolio: boolean };
@@ -294,12 +295,12 @@ function Index() {
       <footer className="border-t border-border/70 py-8 text-center text-sm text-muted-foreground">Edvora · данные отображаются исключительно из загруженной таблицы программ.</footer>
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
-        {selected && <DialogContent className="max-h-[86vh] max-w-3xl overflow-y-auto bg-background p-6 sm:rounded-xl">
-          <DialogHeader className="border-b pb-5 pr-8">
-            <DialogTitle className="font-display text-xl">{selected.university}</DialogTitle>
+        {selected && <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto bg-background p-6 sm:rounded-xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{selected.university}</DialogTitle>
             <DialogDescription>{selected.program}</DialogDescription>
           </DialogHeader>
-          <div><p className="mb-3 text-xs font-bold uppercase">Данные из базы</p>{Object.entries(selected.details).map(([key, value]) => <div key={key} className="border-b border-border/70 py-2.5"><dt className="text-[10px] font-medium uppercase text-muted-foreground">{key}</dt><dd className="mt-1 text-sm leading-relaxed">{value}</dd></div>)}</div>
+          <ProgramDetails program={selected} />
         </DialogContent>}
       </Dialog>
     </div>
