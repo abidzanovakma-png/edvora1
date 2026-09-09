@@ -217,7 +217,13 @@ function Index() {
     setAppliedProfile({ values: [...values], noTest: { ...noTest }, docs: { ...docs } });
     setCountry("Все страны");
     scrollTo("programs");
-
+    void (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+      await supabase
+        .from("profiles")
+        .upsert({ id: data.user.id, target_countries: targetCountries }, { onConflict: "id" });
+    })();
   };
 
   return (
