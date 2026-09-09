@@ -1,5 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { LogOut } from "lucide-react";
 import {
   BadgeDollarSign,
   BookOpen,
@@ -34,7 +36,7 @@ type Docs = { motivation: boolean; recommendations: boolean; portfolio: boolean 
 type AppliedProfile = { values: string[]; noTest: Record<number, boolean>; docs: Docs };
 
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Edvora — подбор университетов по вашему профилю" },
@@ -112,6 +114,41 @@ function Index() {
   const [docs, setDocs] = useState<Docs>({ motivation: false, recommendations: false, portfolio: false });
   const [appliedCountries, setAppliedCountries] = useState<string[]>([...countries]);
   const [appliedProfile, setAppliedProfile] = useState<AppliedProfile | null>(null);
+  const [accountName, setAccountName] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      if (!user || !active) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, target_countries")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!active) return;
+      const metaName =
+        (user.user_metadata?.["full_name"] as string | undefined) ??
+        (user.user_metadata?.["name"] as string | undefined);
+      setAccountName(profile?.full_name ?? metaName ?? user.email ?? "");
+      const saved = profile?.target_countries ?? [];
+      if (saved.length > 0) {
+        setTargetCountries(saved);
+        setAppliedCountries(saved);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("ru");
@@ -180,7 +217,13 @@ function Index() {
     setAppliedProfile({ values: [...values], noTest: { ...noTest }, docs: { ...docs } });
     setCountry("Все страны");
     scrollTo("programs");
-
+    void (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return;
+      await supabase
+        .from("profiles")
+        .upsert({ id: data.user.id, target_countries: targetCountries }, { onConflict: "id" });
+    })();
   };
 
   return (
@@ -194,8 +237,10 @@ function Index() {
             Edvora
           </div>
           <nav className="flex items-center gap-2" aria-label="Основная навигация">
-            <Button variant="ghost" onClick={() => scrollTo("programs")}>Программы</Button>
+            <Button variant="ghost" className="hidden sm:inline-flex" onClick={() => scrollTo("programs")}>Программы</Button>
             <Button onClick={() => scrollTo("profile")}>Подобрать</Button>
+            {accountName && <span className="hidden max-w-[160px] truncate text-sm font-medium text-muted-foreground md:inline">{accountName}</span>}
+            <Button variant="outline" size="sm" onClick={signOut} aria-label="Выйти из аккаунта"><LogOut className="size-4" /><span className="hidden sm:inline">Выйти</span></Button>
           </nav>
         </div>
       </header>
