@@ -34,7 +34,7 @@ type Docs = { motivation: boolean; recommendations: boolean; portfolio: boolean 
 type AppliedProfile = { values: string[]; noTest: Record<number, boolean>; docs: Docs };
 
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Edvora — подбор университетов по вашему профилю" },
