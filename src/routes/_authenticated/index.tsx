@@ -237,8 +237,10 @@ function Index() {
             Edvora
           </div>
           <nav className="flex items-center gap-2" aria-label="Основная навигация">
-            <Button variant="ghost" onClick={() => scrollTo("programs")}>Программы</Button>
+            <Button variant="ghost" className="hidden sm:inline-flex" onClick={() => scrollTo("programs")}>Программы</Button>
             <Button onClick={() => scrollTo("profile")}>Подобрать</Button>
+            {accountName && <span className="hidden max-w-[160px] truncate text-sm font-medium text-muted-foreground md:inline">{accountName}</span>}
+            <Button variant="outline" size="sm" onClick={signOut} aria-label="Выйти из аккаунта"><LogOut className="size-4" /><span className="hidden sm:inline">Выйти</span></Button>
           </nav>
         </div>
       </header>
