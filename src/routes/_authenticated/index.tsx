@@ -114,6 +114,41 @@ function Index() {
   const [docs, setDocs] = useState<Docs>({ motivation: false, recommendations: false, portfolio: false });
   const [appliedCountries, setAppliedCountries] = useState<string[]>([...countries]);
   const [appliedProfile, setAppliedProfile] = useState<AppliedProfile | null>(null);
+  const [accountName, setAccountName] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      if (!user || !active) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, target_countries")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!active) return;
+      const metaName =
+        (user.user_metadata?.["full_name"] as string | undefined) ??
+        (user.user_metadata?.["name"] as string | undefined);
+      setAccountName(profile?.full_name ?? metaName ?? user.email ?? "");
+      const saved = profile?.target_countries ?? [];
+      if (saved.length > 0) {
+        setTargetCountries(saved);
+        setAppliedCountries(saved);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("ru");
