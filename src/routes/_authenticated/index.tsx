@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut } from "lucide-react";
+import { Heart, LogOut } from "lucide-react";
 import {
   BadgeDollarSign,
   BookOpen,
@@ -115,6 +115,8 @@ function Index() {
   const [appliedCountries, setAppliedCountries] = useState<string[]>([...countries]);
   const [appliedProfile, setAppliedProfile] = useState<AppliedProfile | null>(null);
   const [accountName, setAccountName] = useState("");
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -128,11 +130,16 @@ function Index() {
         .select("full_name, target_countries")
         .eq("id", user.id)
         .maybeSingle();
+      const { data: savedFavorites } = await supabase
+        .from("favorite_universities")
+        .select("university")
+        .eq("user_id", user.id);
       if (!active) return;
       const metaName =
         (user.user_metadata?.["full_name"] as string | undefined) ??
         (user.user_metadata?.["name"] as string | undefined);
       setAccountName(profile?.full_name ?? metaName ?? user.email ?? "");
+      setFavorites(savedFavorites?.map((item) => item.university) ?? []);
       const saved = profile?.target_countries ?? [];
       if (saved.length > 0) {
         setTargetCountries(saved);
@@ -149,6 +156,19 @@ function Index() {
     navigate({ to: "/auth", replace: true });
   };
 
+  const toggleFavorite = async (university: string) => {
+    const wasFavorite = favorites.includes(university);
+    setFavorites((current) => wasFavorite ? current.filter((item) => item !== university) : [...current, university]);
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    const result = wasFavorite
+      ? await supabase.from("favorite_universities").delete().eq("user_id", data.user.id).eq("university", university)
+      : await supabase.from("favorite_universities").insert({ user_id: data.user.id, university });
+    if (result.error) {
+      setFavorites((current) => wasFavorite ? [...current, university] : current.filter((item) => item !== university));
+    }
+  };
+
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("ru");
@@ -158,6 +178,7 @@ function Index() {
         [program.university, program.program, program.city].some((value) =>
           value.toLocaleLowerCase("ru").includes(needle),
         );
+      const matchesFavorite = !favoritesOnly || favorites.includes(program.university);
       const profileMatches = !appliedProfile || (
         matchesMinimum(appliedProfile.values[0] ?? "", appliedProfile.noTest[0], program.gpaMin) &&
         matchesMinimum(appliedProfile.values[1] ?? "", appliedProfile.noTest[1], program.ieltsMin) &&
@@ -169,6 +190,7 @@ function Index() {
       );
       return (
         matchesQuery &&
+        matchesFavorite &&
         appliedCountries.includes(program.country) &&
         profileMatches &&
         (country === "Все страны" || program.country === country) &&
@@ -195,7 +217,7 @@ function Index() {
     return scored.sort((a, b) =>
       a.assessment && b.assessment ? order[a.assessment.category] - order[b.assessment.category] : 0,
     );
-  }, [query, country, level, language, major, appliedCountries, appliedProfile]);
+  }, [query, country, level, language, major, appliedCountries, appliedProfile, favorites, favoritesOnly]);
 
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -228,16 +250,19 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
-        <div className="mx-auto flex h-[60px] max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-2 font-display text-lg font-bold">
-            <span className="grid size-9 place-items-center rounded-full bg-primary text-primary-foreground">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-2 font-display text-lg font-bold text-primary">
+            <span className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-card">
               <GraduationCap className="size-5" />
             </span>
             Edvora
           </div>
           <nav className="flex items-center gap-2" aria-label="Основная навигация">
             <Button variant="ghost" className="hidden sm:inline-flex" onClick={() => scrollTo("programs")}>Программы</Button>
+            <Button variant={favoritesOnly ? "secondary" : "ghost"} size="sm" onClick={() => { setFavoritesOnly((current) => !current); scrollTo("programs"); }} aria-pressed={favoritesOnly}>
+              <Heart className={favoritesOnly ? "fill-current" : ""} /> <span className="hidden sm:inline">Избранное</span><span>{favorites.length}</span>
+            </Button>
             <Button onClick={() => scrollTo("profile")}>Подобрать</Button>
             {accountName && <span className="hidden max-w-[160px] truncate text-sm font-medium text-muted-foreground md:inline">{accountName}</span>}
             <Button variant="outline" size="sm" onClick={signOut} aria-label="Выйти из аккаунта"><LogOut className="size-4" /><span className="hidden sm:inline">Выйти</span></Button>
@@ -246,33 +271,33 @@ function Index() {
       </header>
 
       <main>
-        <section className="hero-surface text-primary-foreground">
-          <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 md:grid-cols-[1.2fr_1fr] md:items-center md:py-20">
+        <section className="hero-surface border-b border-border">
+          <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[1.35fr_1fr] md:items-center md:py-16">
             <div className="fade-up">
-              <span className="inline-flex rounded-full bg-primary-foreground px-3 py-1 text-xs font-semibold text-primary">
+              <span className="inline-flex rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
                 {programsData.length} университетов · 3 страны
               </span>
               <h1 className="mt-6 max-w-2xl font-display text-4xl font-bold leading-tight md:text-5xl">
                 Подбор университета по вашим реальным показателям
               </h1>
-              <p className="mt-5 max-w-xl text-base leading-relaxed text-primary-foreground/80">
+              <p className="mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
                 Заполните профиль — Edvora сопоставит GPA, языковые тесты и бюджет с требованиями программ и покажет индекс совместимости, сильные стороны и точные дефициты.
               </p>
               <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
                 <Button variant="secondary" size="lg" onClick={() => scrollTo("profile")}>
                   <Search /> Найти университеты
                 </Button>
-                <Button className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" variant="ghost" onClick={() => scrollTo("programs")}>Смотреть каталог</Button>
+                <Button variant="ghost" onClick={() => scrollTo("programs")}>Смотреть каталог</Button>
               </div>
-              <p className="mt-5 flex max-w-xl items-center gap-2 text-xs text-primary-foreground/70">
+              <p className="mt-5 flex max-w-xl items-center gap-2 text-xs text-muted-foreground">
                 <ShieldCheck className="size-4 shrink-0" /> Все требования отображаются только из загруженной базы, без домыслов.
               </p>
             </div>
             <div className="grid gap-3">
               {countries.map((item) => (
-                <div key={item} className="rounded-[18px] bg-primary-foreground/10 p-5 backdrop-blur-sm">
+                <div key={item} className="rounded-xl border border-border bg-card p-5 shadow-card">
                   <p className="font-display text-lg font-bold">{item}</p>
-                  <p className="mt-1 text-sm text-primary-foreground/70">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {programsData.filter((program) => program.country === item).length} программ в базе
                   </p>
                 </div>
@@ -281,11 +306,11 @@ function Index() {
           </div>
         </section>
 
-        <section id="profile" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-14">
+        <section id="profile" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-12 sm:px-6">
           <h2 className="mb-6 flex items-center gap-2 font-display text-2xl font-bold">
             <CircleGauge className="size-5 text-accent" /> Профиль абитуриента
           </h2>
-          <div className="rounded-xl border border-border/70 bg-card p-6 shadow-card">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-card sm:p-6">
             <p className="mb-2 text-sm font-medium">Целевые страны</p>
             <div className="mb-6 flex flex-wrap gap-2">
               {countries.map((item) => {
@@ -318,9 +343,9 @@ function Index() {
           </div>
         </section>
 
-        <section id="programs" className="mx-auto max-w-6xl scroll-mt-20 px-4 pb-20">
+        <section id="programs" className="mx-auto max-w-7xl scroll-mt-20 px-4 pb-20 sm:px-6">
           <div className="mb-5 flex items-end justify-between gap-4">
-            <div><h2 className="font-display text-2xl font-bold">Каталог программ</h2><p className="mt-1 text-sm text-muted-foreground">Найдено: {filtered.length}</p></div>
+            <div><h2 className="font-display text-2xl font-bold">{favoritesOnly ? "Избранные университеты" : "Каталог программ"}</h2><p className="mt-1 text-sm text-muted-foreground">Найдено: {filtered.length}</p></div>
             <p className="flex items-center gap-2 text-sm text-muted-foreground"><SlidersHorizontal className="size-4" /> Фильтры и сортировка</p>
           </div>
           <div className="mb-6 grid gap-3 rounded-xl border border-border/70 bg-card p-4 md:grid-cols-4">
@@ -331,9 +356,10 @@ function Index() {
             <FilterSelect value={major} onChange={setMajor} options={["Все специальности", ...[...new Set(programsData.flatMap((program) => program.majors))].sort((a, b) => a.localeCompare(b, "ru"))]} label="Специальность" />
 
           </div>
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map(({ program, assessment }, index) => <ProgramCard key={`${program.university}-${program.program}-${index}`} program={program} assessment={assessment} onOpen={() => setSelected(program)} />)}
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {filtered.map(({ program, assessment }, index) => <ProgramCard key={`${program.university}-${program.program}-${index}`} program={program} assessment={assessment} onOpen={() => setSelected(program)} favorite={favorites.includes(program.university)} onFavorite={() => void toggleFavorite(program.university)} />)}
           </div>
+          {filtered.length === 0 && <div className="rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center"><Heart className="mx-auto size-6 text-muted-foreground" /><p className="mt-3 font-medium">{favoritesOnly ? "В избранном пока нет университетов" : "По выбранным параметрам ничего не найдено"}</p></div>}
         </section>
       </main>
 
@@ -369,7 +395,7 @@ const statusStyles = {
   skip: "text-muted-foreground/70",
 } as const;
 
-function ProgramCard({ program, assessment, onOpen }: { program: Program; assessment: Assessment | null; onOpen: () => void }) {
+function ProgramCard({ program, assessment, onOpen, favorite, onFavorite }: { program: Program; assessment: Assessment | null; onOpen: () => void; favorite: boolean; onFavorite: () => void }) {
   const rows = [
     [GraduationCap, "Уровень", program.levels.join(", ")], [Languages, "Языки обучения", program.languages.join(", ")],
     [BookOpen, "Специальности", program.majors.join(", ")],
@@ -377,8 +403,8 @@ function ProgramCard({ program, assessment, onOpen }: { program: Program; assess
     [BadgeDollarSign, "Стоимость", program.cost],
   ] as const;
 
-  return <article className="card-elevate fade-up flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-card">
-    <div className="border-b border-border/70 bg-muted/35 p-5"><div className="flex items-center justify-between gap-2"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span>{assessment && <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${categoryStyles[assessment.category]}`}>{assessment.category}</span>}</div><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
+  return <article className="card-elevate fade-up flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card">
+    <div className="border-b border-border bg-muted/35 p-5"><div className="flex items-center justify-between gap-2"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span><div className="flex items-center gap-2">{assessment && <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${categoryStyles[assessment.category]}`}>{assessment.category}</span>}<Button type="button" variant="ghost" size="icon" className="size-8" onClick={onFavorite} aria-label={favorite ? `Удалить ${program.university} из избранного` : `Добавить ${program.university} в избранное`} aria-pressed={favorite}><Heart className={favorite ? "fill-primary text-primary" : "text-muted-foreground"} /></Button></div></div><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
     <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl>{assessment && <div className="rounded-lg border border-border/70 bg-muted/25 p-3"><p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Оценка профиля</p><dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p>{assessment.recommendations.length > 0 && <div className="mt-2 border-t border-border/60 pt-2"><p className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">Рекомендации</p><ul className="list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-muted-foreground">{assessment.recommendations.map((tip) => <li key={tip}>{tip}</li>)}</ul></div>}</div>}<a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="pt-2"><Button className="w-full" variant="secondary" onClick={onOpen}>Подробнее</Button></div></div>
 
   </article>;

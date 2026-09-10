@@ -96,44 +96,45 @@ function AuthPage() {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
-      <section className="hero-surface hidden flex-col justify-between p-10 text-primary-foreground lg:flex">
-        <div className="flex items-center gap-2 font-display text-lg font-bold">
-          <span className="grid size-9 place-items-center rounded-full bg-primary-foreground text-primary">
+    <main className="soft-grid min-h-screen bg-background px-4 py-10 sm:py-16">
+      <div className="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[1fr_440px] lg:items-center">
+      <section className="hidden px-8 lg:block">
+        <div className="flex items-center gap-2 font-display text-xl font-bold text-primary">
+          <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-card">
             <GraduationCap className="size-5" />
           </span>
           Edvora
         </div>
-        <div>
-          <h1 className="max-w-md font-display text-4xl font-bold leading-tight">
+        <div className="mt-14">
+          <h1 className="max-w-lg font-display text-4xl font-bold leading-tight text-foreground">
             Аккаунт открывает доступ к каталогу университетов
           </h1>
-          <p className="mt-5 max-w-md text-base leading-relaxed text-primary-foreground/80">
+          <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
             Профиль сохраняется: в следующий раз ваши показатели, страны интереса и подобранные программы будут на месте.
           </p>
-          <ul className="mt-8 space-y-3 text-sm text-primary-foreground/80">
+          <ul className="mt-8 grid gap-3 text-sm text-foreground">
             {["30 университетов Китая, Японии и Южной Кореи", "Требования каждой страны в подробностях карточки", "Оценка Safety / Match / Reach по вашему профилю"].map((item) => (
-              <li key={item} className="flex items-start gap-2">
-                <ShieldCheck className="mt-0.5 size-4 shrink-0" /> {item}
+              <li key={item} className="flex items-start gap-3 rounded-lg border border-border bg-card p-3 shadow-card">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-accent" /> {item}
               </li>
             ))}
           </ul>
         </div>
-        <p className="text-xs text-primary-foreground/60">Edvora · данные только из загруженной базы программ.</p>
+        <p className="mt-10 text-xs text-muted-foreground">Edvora · данные только из загруженной базы программ.</p>
       </section>
 
-      <section className="flex items-center justify-center bg-background px-4 py-14">
-        <div className="w-full max-w-md rounded-xl border border-border/70 bg-card p-7 shadow-card">
-          <div className="mb-6 flex items-center gap-2 font-display text-lg font-bold lg:hidden">
-            <span className="grid size-9 place-items-center rounded-full bg-primary text-primary-foreground">
+      <section className="flex items-center justify-center">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-card sm:p-9">
+          <div className="mb-7 flex items-center justify-center gap-2 font-display text-xl font-bold text-primary lg:hidden">
+            <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground">
               <GraduationCap className="size-5" />
             </span>
             Edvora
           </div>
-          <h2 className="font-display text-2xl font-bold">
+          <h2 className="text-center font-display text-2xl font-bold">
             {mode === "signup" ? "Создайте аккаунт" : "Вход в аккаунт"}
           </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             {mode === "signup"
               ? "Регистрация обязательна для доступа к каталогу программ."
               : "Введите почту и пароль, указанные при регистрации."}
@@ -205,9 +206,10 @@ function AuthPage() {
 
           <p className="mt-5 text-center text-sm text-muted-foreground">
             {mode === "signup" ? "Уже есть аккаунт?" : "Ещё нет аккаунта?"}{" "}
-            <button
+            <Button
               type="button"
-              className="font-medium text-accent hover:underline"
+              variant="link"
+              className="h-auto p-0 font-medium text-primary"
               onClick={() => {
                 setMode(mode === "signup" ? "login" : "signup");
                 setError(null);
@@ -215,10 +217,11 @@ function AuthPage() {
               }}
             >
               {mode === "signup" ? "Войти" : "Создать аккаунт"}
-            </button>
+            </Button>
           </p>
         </div>
       </section>
-    </div>
+      </div>
+    </main>
   );
 }
