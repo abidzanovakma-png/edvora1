@@ -385,7 +385,6 @@ export const guides: Record<string, Guide> = {
       { name: "Medicine", local: "—", english: "Ограниченно", check: "Особенно строгие eligibility и language requirements; international seats сильно ограничены" },
     ],
     majorsNote:
-    majorsNote:
       "В Корее доступны практически все основные направления: humanities, social sciences, business/economics, engineering, natural sciences, CS/AI, arts, media, life sciences. Детальной таблицы «специальность → доступность на корейском/английском» в исходном гиде для Кореи не было, поэтому проценты доступности не домысливаются — проверять по конкретному университету.",
     availability: {
       method:
