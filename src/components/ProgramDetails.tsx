@@ -50,6 +50,30 @@ function SectionTitle({ icon: Icon, children }: { icon: typeof BookOpen; childre
   );
 }
 
+function availabilityTone(level: string) {
+  const value = level.toLowerCase();
+  if (value.includes("низк") || value.includes("ограничен")) {
+    return "border-destructive/30 bg-destructive/10 text-destructive";
+  }
+  if (value.includes("средняя–высокая") || value.includes("высокая") || value.includes("основное")) {
+    return value.includes("средняя–высокая")
+      ? "border-primary/30 bg-primary/10 text-primary"
+      : "border-accent/40 bg-accent/15 text-accent";
+  }
+  return "border-border bg-muted text-muted-foreground";
+}
+
+function AvailabilityBadge({ label, level }: { label: string; level: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${availabilityTone(level)}`}
+    >
+      <span className="rounded bg-current/15 px-1 text-[9px] font-bold uppercase tracking-wide">{label}</span>
+      {level}
+    </span>
+  );
+}
+
 function Rows({ items }: { items: { label: string; value: string }[] }) {
   return (
     <dl className="grid gap-3 sm:grid-cols-2">
