@@ -12,6 +12,14 @@ export type Guide = {
   covers: string[];
   majors: { name: string; local: string; english: string; check: string }[];
   majorsNote?: string;
+  availability?: {
+    method?: string;
+    items: { name: string; kr: string; en: string; check: string }[];
+    dbFields?: string[];
+    examples?: { name: string; value: string }[];
+    notes?: string[];
+    sources?: string;
+  };
   steps: { step: string; action: string; result: string; when?: string }[];
   documents: { doc: string; need: string; note?: string }[];
   faq: { q: string; a: string }[];
