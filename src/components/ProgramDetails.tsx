@@ -50,6 +50,30 @@ function SectionTitle({ icon: Icon, children }: { icon: typeof BookOpen; childre
   );
 }
 
+function availabilityTone(level: string) {
+  const value = level.toLowerCase();
+  if (value.includes("низк") || value.includes("ограничен")) {
+    return "border-destructive/30 bg-destructive/10 text-destructive";
+  }
+  if (value.includes("средняя–высокая") || value.includes("высокая") || value.includes("основное")) {
+    return value.includes("средняя–высокая")
+      ? "border-primary/30 bg-primary/10 text-primary"
+      : "border-accent/40 bg-accent/15 text-accent";
+  }
+  return "border-border bg-muted text-muted-foreground";
+}
+
+function AvailabilityBadge({ label, level }: { label: string; level: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${availabilityTone(level)}`}
+    >
+      <span className="rounded bg-current/15 px-1 text-[9px] font-bold uppercase tracking-wide">{label}</span>
+      {level}
+    </span>
+  );
+}
+
 function Rows({ items }: { items: { label: string; value: string }[] }) {
   return (
     <dl className="grid gap-3 sm:grid-cols-2">
@@ -221,6 +245,88 @@ export function ProgramDetails({ program }: { program: DetailProgram }) {
                     <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{guide.majorsNote}</p>
                   )}
                 </div>
+                {guide.availability && (
+                  <div>
+                    <SectionTitle icon={Sparkles}>Доступность специальностей — {guide.country}</SectionTitle>
+                    {guide.availability.method && (
+                      <p className="mb-4 rounded-xl border border-accent/30 bg-accent/5 p-3 text-xs leading-relaxed text-muted-foreground">
+                        <span className="font-bold text-accent">Методика.</span> {guide.availability.method}
+                      </p>
+                    )}
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                      {guide.availability.items.map((item) => (
+                        <div
+                          key={item.name}
+                          className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-lg"
+                        >
+                          <span className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary to-accent opacity-0 transition-opacity group-hover:opacity-100" />
+                          <p className="font-display text-sm font-bold leading-snug">{item.name}</p>
+                          <div className="mt-2.5 flex flex-wrap gap-1.5">
+                            <AvailabilityBadge label="KR" level={item.kr} />
+                            <AvailabilityBadge label="EN" level={item.en} />
+                          </div>
+                          <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">
+                            <span className="font-semibold uppercase tracking-wide text-accent/80">Проверить: </span>
+                            {item.check}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {guide.availability.examples && (
+                      <div className="mt-5">
+                        <SectionTitle icon={BadgeCheck}>Проверенные примеры</SectionTitle>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {guide.availability.examples.map((item) => (
+                            <div
+                              key={item.name}
+                              className="rounded-xl border border-border/70 bg-gradient-to-br from-muted/40 to-transparent p-3.5"
+                            >
+                              <p className="text-sm font-bold">{item.name}</p>
+                              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{item.value}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {guide.availability.dbFields && (
+                      <div className="mt-5">
+                        <SectionTitle icon={ListChecks}>Рекомендуемые поля данных</SectionTitle>
+                        <div className="flex flex-wrap gap-1.5">
+                          {guide.availability.dbFields.map((field) => (
+                            <span
+                              key={field}
+                              className="rounded-lg border border-border/70 bg-muted/40 px-2.5 py-1 font-mono text-[11px] font-medium text-muted-foreground"
+                            >
+                              {field}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {guide.availability.notes && (
+                      <ul className="mt-5 space-y-2">
+                        {guide.availability.notes.map((note) => (
+                          <li
+                            key={note}
+                            className="flex items-start gap-2 rounded-xl border-l-2 border-accent bg-muted/25 p-3 text-xs leading-relaxed text-muted-foreground"
+                          >
+                            <CircleHelp className="mt-0.5 size-3.5 shrink-0 text-accent" /> {note}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {guide.availability.sources && (
+                      <p className="mt-3 text-xs leading-relaxed text-muted-foreground/80">
+                        <span className="font-semibold">Источники проверки: </span>
+                        {guide.availability.sources}
+                      </p>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </TabsContent>

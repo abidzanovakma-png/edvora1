@@ -12,6 +12,14 @@ export type Guide = {
   covers: string[];
   majors: { name: string; local: string; english: string; check: string }[];
   majorsNote?: string;
+  availability?: {
+    method?: string;
+    items: { name: string; kr: string; en: string; check: string }[];
+    dbFields?: string[];
+    examples?: { name: string; value: string }[];
+    notes?: string[];
+    sources?: string;
+  };
   steps: { step: string; action: string; result: string; when?: string }[];
   documents: { doc: string; need: string; note?: string }[];
   faq: { q: string; a: string }[];
@@ -378,6 +386,71 @@ export const guides: Record<string, Guide> = {
     ],
     majorsNote:
       "В Корее доступны практически все основные направления: humanities, social sciences, business/economics, engineering, natural sciences, CS/AI, arts, media, life sciences. Детальной таблицы «специальность → доступность на корейском/английском» в исходном гиде для Кореи не было, поэтому проценты доступности не домысливаются — проверять по конкретному университету.",
+    availability: {
+      method:
+        "«Высокая» означает подтверждённое широкое наличие соответствующего трека; «Средняя» — отдельные подтверждённые варианты; «Низкая / ограниченная» — редкие или сильно зависящие от программы варианты. Это не процент всех программ страны.",
+      items: [
+        { name: "Экономика (Economics)", kr: "Высокая", en: "Средняя–высокая", check: "English track; IELTS/TOEFL; mathematics/economics prerequisites" },
+        { name: "Финансы (Finance)", kr: "Высокая", en: "Средняя–высокая", check: "English-track availability; mathematics; English proof" },
+        { name: "Бухгалтерия (Accounting)", kr: "Высокая", en: "Средняя", check: "Отдельный English track vs отдельные English courses" },
+        { name: "Международный бизнес (International Business)", kr: "Высокая", en: "Высокая", check: "Language of instruction; English proficiency; curriculum" },
+        { name: "Бизнес-администрирование / BBA", kr: "Высокая", en: "Высокая", check: "English-track requirements; IELTS/TOEFL; admission category" },
+        { name: "Менеджмент (Management)", kr: "Высокая", en: "Высокая", check: "English-track options; конкретный university/intake" },
+        { name: "Маркетинг (Marketing)", kr: "Высокая", en: "Средняя", check: "Major vs concentration; язык curriculum" },
+        { name: "Логистика / SCM", kr: "Высокая", en: "Средняя", check: "English-medium major; business/engineering classification" },
+        { name: "Международная торговля (International Trade)", kr: "Высокая", en: "Средняя–высокая", check: "International Business/Trade track; English proof" },
+        { name: "Компьютерные науки (Computer Science)", kr: "Высокая", en: "Высокая", check: "English-track curriculum; mathematics" },
+        { name: "Software Engineering", kr: "Высокая", en: "Средняя–высокая", check: "Software Engineering vs CS/IT; язык курса" },
+        { name: "Data Science", kr: "Высокая", en: "Средняя–высокая", check: "English-medium major; mathematics/statistics" },
+        { name: "Искусственный интеллект (AI)", kr: "Высокая", en: "Средняя–высокая", check: "AI/AI Convergence; mathematics/programming" },
+        { name: "Кибербезопасность (Cybersecurity)", kr: "Высокая", en: "Средняя", check: "Отдельный international/English bachelor" },
+        { name: "Электротехника (Electrical Engineering)", kr: "Высокая", en: "Высокая", check: "English-medium engineering; mathematics/physics" },
+        { name: "Механика (Mechanical Engineering)", kr: "Высокая", en: "Высокая", check: "English-medium curriculum" },
+        { name: "Гражданская инженерия (Civil Engineering)", kr: "Высокая", en: "Высокая", check: "English-medium curriculum" },
+        { name: "Материаловедение (Materials Science)", kr: "Высокая", en: "Высокая", check: "English-medium engineering curriculum" },
+        { name: "Химическая инженерия (Chemical Engineering)", kr: "Высокая", en: "Высокая", check: "English-medium engineering curriculum" },
+        { name: "Энергетика / Sustainable Energy", kr: "Высокая", en: "Высокая", check: "Energy/Chemical/Nuclear Engineering options" },
+        { name: "Архитектура (Architecture)", kr: "Высокая", en: "Низкая–средняя", check: "5-year structure; studio/practical; language" },
+        { name: "Environmental / Architectural Engineering", kr: "Высокая", en: "Средняя–высокая", check: "Engineering vs Architecture; English-track" },
+        { name: "Environmental Design", kr: "Высокая", en: "Средняя", check: "Portfolio/studio; English-medium availability" },
+        { name: "Визуальный дизайн (Visual Communication / Visual Design)", kr: "Высокая", en: "Низкая–средняя", check: "Portfolio/practical test; English-medium" },
+        { name: "Digital Media / Digital Media Art", kr: "Высокая", en: "Средняя", check: "English-track media programs; portfolio" },
+        { name: "Медицина (Clinical Medicine)", kr: "Высокая", en: "Низкая / ограниченная", check: "International seats; Korean clinical training; licensing" },
+        { name: "Фармация (Pharmacy)", kr: "Высокая", en: "Низкая / ограниченная", check: "Korean professional-language requirements; international admission" },
+        { name: "Биология (Biological / Life Sciences)", kr: "Высокая", en: "Средняя–высокая", check: "English-medium natural-science programs" },
+        { name: "Математика (Mathematics)", kr: "Высокая", en: "Средняя", check: "English-medium curriculum; prerequisites" },
+        { name: "Физика (Physics)", kr: "Высокая", en: "Средняя–высокая", check: "English-medium science programs" },
+        { name: "Международные отношения (International Relations)", kr: "Высокая", en: "Высокая", check: "International Studies/Global Studies English tracks" },
+        { name: "Право (Law)", kr: "Высокая", en: "Низкая", check: "Korean legal system; professional qualification implications" },
+        { name: "Психология (Psychology)", kr: "Высокая", en: "Средняя", check: "English-medium bachelor vs individual English courses" },
+        { name: "Журналистика / Media", kr: "Высокая", en: "Средняя", check: "English-track media; portfolio/interview" },
+        { name: "Корейский язык и литература", kr: "Основное", en: "Низкая–средняя", check: "Обычно Korean-medium; Korean Studies may be English" },
+        { name: "Педагогика (Education)", kr: "Высокая", en: "Низкая–средняя", check: "Teacher certification/clinical requirements; language" },
+        { name: "Искусство / Fine Arts", kr: "Высокая", en: "Низкая–средняя", check: "Portfolio/practical examination; studio language" },
+      ],
+      dbFields: [
+        "availability_kr",
+        "availability_en",
+        "evidence_university",
+        "evidence_year",
+        "language_of_instruction",
+        "verification_date",
+      ],
+      examples: [
+        { name: "Hanyang University", value: "Business Administration и Economics с English Track" },
+        { name: "Kyung Hee University", value: "Management с English Track" },
+        { name: "Korea University", value: "International Studies (English Track)" },
+        { name: "UNIST", value: "ряд инженерных направлений с 100% English classes" },
+      ],
+      notes: [
+        "Не хранить эти значения как национальные проценты: официальные источники публикуют сведения на уровне конкретных университетов/программ.",
+        "Примеры подтверждают наличие English-track, но не означают, что такой трек есть в каждом вузе.",
+        "Для Korean-taught программ базовый ориентир — TOPIK Level 3+, однако конкретный факультет может требовать TOPIK 4/5/6 или альтернативу.",
+        "Для English-taught программ универсального национального минимального IELTS/TOEFL нет: требования устанавливает конкретная программа.",
+      ],
+      sources:
+        "Study in Korea (Government of Korea) и официальные admission guides университетов; для конкретного intake язык и требования необходимо сверять заново.",
+    },
     steps: [
       { step: "1", action: "Выбрать специальность и язык обучения (Korean-taught или English-taught)", result: "Major и язык программы" },
       { step: "2", action: "Составить shortlist из 5–10 университетов", result: "Требования, tuition, scholarship, общежитие, сроки" },
