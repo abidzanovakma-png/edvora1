@@ -386,29 +386,73 @@ function FilterSelect({ value, onChange, options, label }: { value: string; onCh
 }
 
 const categoryStyles = {
-  Safety: "bg-accent text-accent-foreground",
-  Match: "bg-secondary text-secondary-foreground",
-  Reach: "bg-muted text-foreground",
-} as const;
-
-const statusStyles = {
-  pass: "text-accent",
-  below: "text-destructive",
-  unknown: "text-muted-foreground",
-  skip: "text-muted-foreground/70",
+  Safety: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  Match: "bg-primary/10 text-primary border-primary/20",
+  Reach: "bg-muted text-muted-foreground border-border",
 } as const;
 
 function ProgramCard({ program, assessment, onOpen, favorite, onFavorite }: { program: Program; assessment: Assessment | null; onOpen: () => void; favorite: boolean; onFavorite: () => void }) {
-  const rows = [
-    [GraduationCap, "Уровень", program.levels.join(", ")], [Languages, "Языки обучения", program.languages.join(", ")],
-    [BookOpen, "Специальности", program.majors.join(", ")],
-    [CircleGauge, "GPA", program.gpa], [null, "IELTS", program.ielts], [null, "TOEFL", program.toefl],
-    [BadgeDollarSign, "Стоимость", program.cost],
-  ] as const;
+  return (
+    <article className="fade-up flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <MapPin className="size-3" /> {program.country}
+            </span>
+            {assessment && (
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${categoryStyles[assessment.category]}`}>
+                {assessment.category}
+              </span>
+            )}
+          </div>
+          <h3 className="mt-2 font-display text-lg font-bold leading-snug">{program.university}</h3>
+          <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{program.city}</span>
+            <span>·</span>
+            <span className="flex items-center gap-1"><Medal className="size-3" /> QS {program.rank}</span>
+          </p>
+        </div>
+        <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0 rounded-full" onClick={onFavorite} aria-label={favorite ? `Удалить ${program.university} из избранного` : `Добавить ${program.university} в избранное`} aria-pressed={favorite}>
+          <Heart className={favorite ? "fill-primary text-primary" : "text-muted-foreground"} />
+        </Button>
+      </div>
 
-  return <article className="program-card card-elevate fade-up flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card">
-    <div className="program-card-head relative border-b border-border/70 p-5"><div className="flex items-center justify-between gap-2"><span className="inline-flex items-center gap-1.5 rounded-full border border-primary/10 bg-card/80 px-2.5 py-1 text-[10px] font-semibold text-primary"><MapPin className="size-3" />{program.country}</span><div className="flex items-center gap-2">{assessment && <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${categoryStyles[assessment.category]}`}>{assessment.category}</span>}<Button type="button" variant="ghost" size="icon" className="size-9 rounded-full bg-card/80 shadow-sm" onClick={onFavorite} aria-label={favorite ? `Удалить ${program.university} из избранного` : `Добавить ${program.university} в избранное`} aria-pressed={favorite}><Heart className={favorite ? "fill-primary text-primary" : "text-muted-foreground"} /></Button></div></div><div className="mt-5 grid size-11 place-items-center rounded-xl bg-primary text-primary-foreground shadow-card"><GraduationCap className="size-5" /></div><h3 className="mt-3 font-display text-lg font-bold leading-snug">{program.university}</h3><p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
-    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm leading-relaxed text-muted-foreground">{program.program}</p><dl className="grid grid-cols-2 gap-2 text-xs">{rows.map(([Icon, label, value], index) => <div key={label} className={`rounded-lg border border-border/60 bg-muted/30 p-2.5 ${index < 3 ? "col-span-2" : ""}`}>{Icon ? <Icon className="mb-1.5 size-3.5 text-accent" /> : <CircleGauge className="mb-1.5 size-3.5 text-accent" />}<dt className="text-[10px] text-muted-foreground">{label}</dt><dd className="mt-0.5 line-clamp-2 font-semibold">{value}</dd></div>)}</dl>{assessment && <div className="rounded-xl border border-border/70 bg-muted/25 p-3"><p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Оценка профиля</p><dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p>{assessment.recommendations.length > 0 && <div className="mt-2 border-t border-border/60 pt-2"><p className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">Рекомендации</p><ul className="list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-muted-foreground">{assessment.recommendations.map((tip) => <li key={tip}>{tip}</li>)}</ul></div>}</div>}<a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-semibold text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="pt-1"><Button className="w-full rounded-xl" onClick={onOpen}>Подробнее <ArrowRight /></Button></div></div>
+      <p className="mt-4 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{program.program}</p>
 
-  </article>;
+      <div className="mt-4 flex flex-wrap gap-2 text-xs">
+        <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-secondary-foreground">
+          <GraduationCap className="size-3.5" /> {program.levels.join(", ")}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-secondary-foreground">
+          <Languages className="size-3.5" /> {program.languages.join(", ")}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-secondary-foreground">
+          <BookOpen className="size-3.5" /> {program.majors.join(", ")}
+        </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border pt-4 text-xs">
+        <div>
+          <p className="text-[10px] text-muted-foreground">GPA</p>
+          <p className="font-semibold">{program.gpa}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground">IELTS</p>
+          <p className="font-semibold">{program.ielts}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground">Стоимость</p>
+          <p className="font-semibold">{program.cost}</p>
+        </div>
+      </div>
+
+      <div className="mt-auto flex flex-col gap-3 pt-5">
+        <a href={program.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs font-medium text-accent hover:underline">
+          <Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" />
+        </a>
+        <Button className="w-full rounded-xl" onClick={onOpen}>Подробнее <ArrowRight className="size-4" /></Button>
+      </div>
+    </article>
+  );
 }
