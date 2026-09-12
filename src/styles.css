@@ -97,8 +97,7 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
-  --gradient-hero: linear-gradient(135deg, oklch(0.99 0.008 245), oklch(0.96 0.045 235) 52%, oklch(0.975 0.04 195));
-  --gradient-card: linear-gradient(135deg, oklch(0.975 0.025 245), oklch(0.965 0.035 220));
+  --gradient-hero: linear-gradient(120deg, oklch(0.985 0.015 245), oklch(0.975 0.025 220));
   --shadow-card: 0 1px 2px oklch(0.3 0.05 255 / 0.04), 0 12px 30px -18px oklch(0.3 0.05 255 / 0.18);
   --shadow-lift: 0 8px 18px -10px oklch(0.3 0.05 255 / 0.14), 0 24px 44px -26px oklch(0.3 0.05 255 / 0.28);
 }
@@ -159,9 +158,9 @@
 @utility hero-surface { background: var(--gradient-hero); }
 @utility shadow-card { box-shadow: var(--shadow-card); }
 @utility card-elevate {
-  transition: box-shadow 0.28s, transform 0.28s, border-color 0.28s;
+  transition: box-shadow 0.24s, transform 0.24s;
   @media (hover: hover) {
-    &:hover { box-shadow: var(--shadow-lift); transform: translateY(-4px); border-color: color-mix(in oklab, var(--primary) 25%, var(--border)); }
+    &:hover { box-shadow: var(--shadow-lift); transform: translateY(-2px); }
   }
 }
 @utility fade-up { animation: fade-up 0.45s ease-out both; }
@@ -169,28 +168,6 @@
   background-image: linear-gradient(to right, color-mix(in oklab, var(--border) 45%, transparent) 1px, transparent 1px), linear-gradient(to bottom, color-mix(in oklab, var(--border) 45%, transparent) 1px, transparent 1px);
   background-size: 32px 32px;
 }
-
-.nav-shell { box-shadow: 0 12px 40px -22px oklch(0.35 0.13 255 / 0.32); }
-.brand-mark { transform: rotate(-3deg); }
-.country-tile { transition: transform 0.25s ease, border-color 0.25s ease; }
-.country-tile::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary), var(--accent));
-  transform: scaleX(0.32);
-  transform-origin: left;
-  transition: transform 0.25s ease;
-}
-@media (hover: hover) {
-  .country-tile:hover { transform: translateX(4px); border-color: color-mix(in oklab, var(--primary) 28%, var(--border)); }
-  .country-tile:hover::after { transform: scaleX(1); }
-}
-.profile-panel { box-shadow: 0 24px 60px -38px oklch(0.3 0.13 255 / 0.35); }
-.profile-field { min-height: 104px; }
-.program-card-head { background: var(--gradient-card); }
-.program-card { isolation: isolate; }
 
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(12px); }

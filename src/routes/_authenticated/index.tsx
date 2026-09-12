@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Heart, LogOut, Sparkles } from "lucide-react";
+import { Heart, LogOut } from "lucide-react";
 import {
   BadgeDollarSign,
   BookOpen,
@@ -250,20 +250,20 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5">
-        <div className="nav-shell mx-auto flex h-16 max-w-7xl items-center justify-between rounded-2xl border border-border/80 bg-card/90 px-3 shadow-card backdrop-blur-xl sm:px-5">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2 font-display text-lg font-bold text-primary">
-            <span className="brand-mark grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-card">
+            <span className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground shadow-card">
               <GraduationCap className="size-5" />
             </span>
             Edvora
           </div>
-          <nav className="flex items-center gap-1.5" aria-label="Основная навигация">
+          <nav className="flex items-center gap-2" aria-label="Основная навигация">
             <Button variant="ghost" className="hidden sm:inline-flex" onClick={() => scrollTo("programs")}>Программы</Button>
-            <Button variant={favoritesOnly ? "secondary" : "ghost"} size="sm" className="rounded-xl" onClick={() => { setFavoritesOnly((current) => !current); scrollTo("programs"); }} aria-pressed={favoritesOnly}>
+            <Button variant={favoritesOnly ? "secondary" : "ghost"} size="sm" onClick={() => { setFavoritesOnly((current) => !current); scrollTo("programs"); }} aria-pressed={favoritesOnly}>
               <Heart className={favoritesOnly ? "fill-current" : ""} /> <span className="hidden sm:inline">Избранное</span><span>{favorites.length}</span>
             </Button>
-            <Button className="rounded-xl shadow-card" onClick={() => scrollTo("profile")}><Sparkles /> Подобрать</Button>
+            <Button onClick={() => scrollTo("profile")}>Подобрать</Button>
             {accountName && <span className="hidden max-w-[160px] truncate text-sm font-medium text-muted-foreground md:inline">{accountName}</span>}
             <Button variant="outline" size="sm" onClick={signOut} aria-label="Выйти из аккаунта"><LogOut className="size-4" /><span className="hidden sm:inline">Выйти</span></Button>
           </nav>
@@ -271,11 +271,10 @@ function Index() {
       </header>
 
       <main>
-        <section className="hero-surface relative -mt-[76px] overflow-hidden border-b border-border pt-[76px]">
+        <section className="hero-surface border-b border-border">
           <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[1.35fr_1fr] md:items-center md:py-16">
             <div className="fade-up">
-              <span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-card/75 px-3 py-1.5 text-xs font-semibold text-primary shadow-card backdrop-blur">
-                <Sparkles className="size-3.5 text-accent" />
+              <span className="inline-flex rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
                 {programsData.length} университетов · 3 страны
               </span>
               <h1 className="mt-6 max-w-2xl font-display text-4xl font-bold leading-tight md:text-5xl">
@@ -285,8 +284,8 @@ function Index() {
                 Заполните профиль — Edvora сопоставит GPA, языковые тесты и бюджет с требованиями программ и покажет индекс совместимости, сильные стороны и точные дефициты.
               </p>
               <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-                <Button size="lg" className="rounded-xl shadow-card" onClick={() => scrollTo("profile")}>
-                  <Search /> Найти университеты <ArrowRight />
+                <Button variant="secondary" size="lg" onClick={() => scrollTo("profile")}>
+                  <Search /> Найти университеты
                 </Button>
                 <Button variant="ghost" onClick={() => scrollTo("programs")}>Смотреть каталог</Button>
               </div>
@@ -294,11 +293,9 @@ function Index() {
                 <ShieldCheck className="size-4 shrink-0" /> Все требования отображаются только из загруженной базы, без домыслов.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1">
-              {countries.map((item, index) => (
-                <div key={item} className="country-tile group relative overflow-hidden rounded-2xl border border-border/80 bg-card/85 p-5 shadow-card backdrop-blur">
-                  <span className="absolute right-4 top-3 font-display text-4xl font-bold text-primary/10">0{index + 1}</span>
-                  <div className="mb-4 grid size-9 place-items-center rounded-xl bg-secondary text-primary"><Globe className="size-4" /></div>
+            <div className="grid gap-3">
+              {countries.map((item) => (
+                <div key={item} className="rounded-xl border border-border bg-card p-5 shadow-card">
                   <p className="font-display text-lg font-bold">{item}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {programsData.filter((program) => program.country === item).length} программ в базе
@@ -313,7 +310,7 @@ function Index() {
           <h2 className="mb-6 flex items-center gap-2 font-display text-2xl font-bold">
             <CircleGauge className="size-5 text-accent" /> Профиль абитуриента
           </h2>
-          <div className="profile-panel rounded-2xl border border-border bg-card p-5 shadow-card sm:p-7">
+          <div className="rounded-xl border border-border bg-card p-5 shadow-card sm:p-6">
             <p className="mb-2 text-sm font-medium">Целевые страны</p>
             <div className="mb-6 flex flex-wrap gap-2">
               {countries.map((item) => {
@@ -323,12 +320,12 @@ function Index() {
             </div>
             <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
               {fields.map(([label, placeholder, togglable], index) => (
-                <label key={label} className="profile-field block min-w-0 rounded-xl border border-border/70 bg-muted/35 p-3 text-sm font-medium transition-colors focus-within:border-primary/50 focus-within:bg-card focus-within:shadow-card">
+                <label key={label} className="block min-w-0 text-sm font-medium">
                   <span className="mb-2 flex min-h-8 items-start justify-between gap-2 leading-tight">
                     {label}
                     {togglable && <Button type="button" size="sm" variant={noTest[index] ? "secondary" : "outline"} className="h-6 shrink-0 rounded-full px-2 text-[10px] font-normal" aria-pressed={Boolean(noTest[index])} onClick={() => setNoTest((current) => ({ ...current, [index]: !current[index] }))}>нет теста</Button>}
                   </span>
-                  <Input className="border-0 bg-card shadow-none focus-visible:ring-1" value={values[index] ?? ""} disabled={noTest[index]} placeholder={placeholder} onChange={(event) => setValues((current) => current.map((value, itemIndex) => itemIndex === index ? event.target.value : value))} />
+                  <Input value={values[index] ?? ""} disabled={noTest[index]} placeholder={placeholder} onChange={(event) => setValues((current) => current.map((value, itemIndex) => itemIndex === index ? event.target.value : value))} />
                 </label>
               ))}
             </div>
@@ -406,9 +403,9 @@ function ProgramCard({ program, assessment, onOpen, favorite, onFavorite }: { pr
     [BadgeDollarSign, "Стоимость", program.cost],
   ] as const;
 
-  return <article className="program-card card-elevate fade-up flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card">
-    <div className="program-card-head relative border-b border-border/70 p-5"><div className="flex items-center justify-between gap-2"><span className="inline-flex items-center gap-1.5 rounded-full border border-primary/10 bg-card/80 px-2.5 py-1 text-[10px] font-semibold text-primary"><MapPin className="size-3" />{program.country}</span><div className="flex items-center gap-2">{assessment && <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${categoryStyles[assessment.category]}`}>{assessment.category}</span>}<Button type="button" variant="ghost" size="icon" className="size-9 rounded-full bg-card/80 shadow-sm" onClick={onFavorite} aria-label={favorite ? `Удалить ${program.university} из избранного` : `Добавить ${program.university} в избранное`} aria-pressed={favorite}><Heart className={favorite ? "fill-primary text-primary" : "text-muted-foreground"} /></Button></div></div><div className="mt-5 grid size-11 place-items-center rounded-xl bg-primary text-primary-foreground shadow-card"><GraduationCap className="size-5" /></div><h3 className="mt-3 font-display text-lg font-bold leading-snug">{program.university}</h3><p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
-    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm leading-relaxed text-muted-foreground">{program.program}</p><dl className="grid grid-cols-2 gap-2 text-xs">{rows.map(([Icon, label, value], index) => <div key={label} className={`rounded-lg border border-border/60 bg-muted/30 p-2.5 ${index < 3 ? "col-span-2" : ""}`}>{Icon ? <Icon className="mb-1.5 size-3.5 text-accent" /> : <CircleGauge className="mb-1.5 size-3.5 text-accent" />}<dt className="text-[10px] text-muted-foreground">{label}</dt><dd className="mt-0.5 line-clamp-2 font-semibold">{value}</dd></div>)}</dl>{assessment && <div className="rounded-xl border border-border/70 bg-muted/25 p-3"><p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Оценка профиля</p><dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p>{assessment.recommendations.length > 0 && <div className="mt-2 border-t border-border/60 pt-2"><p className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">Рекомендации</p><ul className="list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-muted-foreground">{assessment.recommendations.map((tip) => <li key={tip}>{tip}</li>)}</ul></div>}</div>}<a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-semibold text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="pt-1"><Button className="w-full rounded-xl" onClick={onOpen}>Подробнее <ArrowRight /></Button></div></div>
+  return <article className="card-elevate fade-up flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card">
+    <div className="border-b border-border bg-muted/35 p-5"><div className="flex items-center justify-between gap-2"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span><div className="flex items-center gap-2">{assessment && <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${categoryStyles[assessment.category]}`}>{assessment.category}</span>}<Button type="button" variant="ghost" size="icon" className="size-8" onClick={onFavorite} aria-label={favorite ? `Удалить ${program.university} из избранного` : `Добавить ${program.university} в избранное`} aria-pressed={favorite}><Heart className={favorite ? "fill-primary text-primary" : "text-muted-foreground"} /></Button></div></div><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
+    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl>{assessment && <div className="rounded-lg border border-border/70 bg-muted/25 p-3"><p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Оценка профиля</p><dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p>{assessment.recommendations.length > 0 && <div className="mt-2 border-t border-border/60 pt-2"><p className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">Рекомендации</p><ul className="list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-muted-foreground">{assessment.recommendations.map((tip) => <li key={tip}>{tip}</li>)}</ul></div>}</div>}<a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="pt-2"><Button className="w-full" variant="secondary" onClick={onOpen}>Подробнее</Button></div></div>
 
   </article>;
 }
