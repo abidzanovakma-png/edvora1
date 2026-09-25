@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isEmailNotConfirmed, translateAuthError } from "@/lib/authErrors";
 
 const countries = ["Китай", "Южная Корея", "Япония"] as const;
 
@@ -39,6 +40,9 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Почта, на которую можно повторно отправить письмо подтверждения.
+  const [resendEmail, setResendEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -54,6 +58,11 @@ function AuthPage() {
     event.preventDefault();
     setError(null);
     setMessage(null);
+    setResendEmail(null);
+    if (mode === "signup" && targets.length === 0) {
+      setError("Выберите хотя бы одну страну интереса.");
+      return;
+    }
     setLoading(true);
     try {
       if (mode === "signup") {
@@ -66,17 +75,46 @@ function AuthPage() {
           },
         });
         if (signUpError) throw signUpError;
+        // Если почта уже зарегистрирована, Supabase не возвращает ошибку,
+        // а отдаёт «пустого» пользователя без identities. Раньше в этом
+        // случае сайт ошибочно писал «мы отправили письмо».
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          setError("Эта почта уже зарегистрирована. Войдите в аккаунт.");
+          setMode("login");
+          return;
+        }
         if (!data.session) {
-          setMessage("Мы отправили письмо для подтверждения. Откройте ссылку из письма, чтобы войти.");
+          setMessage(`Мы отправили письмо на ${email}. Откройте ссылку из письма, чтобы подтвердить почту и войти. Проверьте папку «Спам».`);
+          setResendEmail(email);
         }
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInError) throw signInError;
+        if (signInError) {
+          if (isEmailNotConfirmed(signInError)) setResendEmail(email);
+          throw signInError;
+        }
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Не удалось выполнить вход");
+      setError(translateAuthError(caught, mode === "signup" ? "Не удалось зарегистрироваться." : "Не удалось войти."));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resend = async () => {
+    if (!resendEmail) return;
+    setResending(true);
+    setError(null);
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: resendEmail,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    setResending(false);
+    if (resendError) {
+      setError(translateAuthError(resendError, "Не удалось отправить письмо."));
+    } else {
+      setMessage(`Письмо отправлено ещё раз на ${resendEmail}. Проверьте входящие и папку «Спам».`);
     }
   };
 
@@ -197,6 +235,12 @@ function AuthPage() {
                 <Mail className="mt-0.5 size-4 shrink-0" /> {message}
               </p>
             )}
+            {resendEmail && (
+              <Button type="button" variant="outline" className="w-full" onClick={resend} disabled={resending}>
+                {resending && <Loader2 className="size-4 animate-spin" />}
+                Отправить письмо ещё раз
+              </Button>
+            )}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="size-4 animate-spin" />}
@@ -214,6 +258,7 @@ function AuthPage() {
                 setMode(mode === "signup" ? "login" : "signup");
                 setError(null);
                 setMessage(null);
+                setResendEmail(null);
               }}
             >
               {mode === "signup" ? "Войти" : "Создать аккаунт"}
