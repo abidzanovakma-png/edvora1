@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      applications: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          program: string
+          program_key: string
+          status: string
+          submitted_at: string | null
+          university: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          program: string
+          program_key: string
+          status?: string
+          submitted_at?: string | null
+          university: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          program?: string
+          program_key?: string
+          status?: string
+          submitted_at?: string | null
+          university?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      favorite_programs: {
+        Row: {
+          created_at: string
+          id: string
+          program: string
+          program_key: string
+          university: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program: string
+          program_key: string
+          university: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program?: string
+          program_key?: string
+          university?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       favorite_universities: {
         Row: {
           created_at: string
@@ -40,25 +106,109 @@ export type Database = {
       }
       profiles: {
         Row: {
+          about: string | null
+          budget_usd: string | null
+          city: string | null
           created_at: string
+          documents: string[]
+          extra_exams: string | null
           full_name: string | null
+          gender: string | null
+          gpa: string | null
           id: string
+          ielts: string | null
+          intended_level: string | null
+          intended_major: string | null
+          language_exam: string | null
+          sat: string | null
+          skipped_tests: string[]
           target_countries: string[]
+          toefl: string | null
           updated_at: string
         }
         Insert: {
+          about?: string | null
+          budget_usd?: string | null
+          city?: string | null
           created_at?: string
+          documents?: string[]
+          extra_exams?: string | null
           full_name?: string | null
+          gender?: string | null
+          gpa?: string | null
           id: string
+          ielts?: string | null
+          intended_level?: string | null
+          intended_major?: string | null
+          language_exam?: string | null
+          sat?: string | null
+          skipped_tests?: string[]
           target_countries?: string[]
+          toefl?: string | null
           updated_at?: string
         }
         Update: {
+          about?: string | null
+          budget_usd?: string | null
+          city?: string | null
           created_at?: string
+          documents?: string[]
+          extra_exams?: string | null
           full_name?: string | null
+          gender?: string | null
+          gpa?: string | null
           id?: string
+          ielts?: string | null
+          intended_level?: string | null
+          intended_major?: string | null
+          language_exam?: string | null
+          sat?: string | null
+          skipped_tests?: string[]
           target_countries?: string[]
+          toefl?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          done: boolean
+          due_at: string | null
+          id: string
+          notes: string | null
+          program_key: string | null
+          remind_at: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          done?: boolean
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          program_key?: string | null
+          remind_at?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          done?: boolean
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          program_key?: string | null
+          remind_at?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
