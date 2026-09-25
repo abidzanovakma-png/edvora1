@@ -298,6 +298,13 @@ function AuthPage() {
               {mode === "login" ? "Создать аккаунт" : "Войти"}
             </Button>
           </p>
+          {mode !== "forgot" && (
+            <p className="mt-2 text-center text-sm text-muted-foreground">
+              <Button type="button" variant="link" className="h-auto p-0 font-medium text-primary" onClick={() => switchMode("forgot")}>
+                Забыли пароль?
+              </Button>
+            </p>
+          )}
         </div>
       </section>
       </div>
