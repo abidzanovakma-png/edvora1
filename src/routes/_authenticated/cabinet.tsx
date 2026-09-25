@@ -361,7 +361,7 @@ function ProfileTab({ profile, onSaved }: { profile: ProfileForm; onSaved: (prof
       <Card title="Личные данные">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Имя и фамилия">
-            <Input value={form.full_name} onChange={(event) => set("full_name", event.target.value)} placeholder="Акмаль Абиджанов" maxLength={200} />
+            <Input value={form.full_name} onChange={(event) => set("full_name", event.target.value)} maxLength={200} />
           </Field>
           <Field label="Город">
             <Input value={form.city} onChange={(event) => set("city", event.target.value)} placeholder="Алматы" maxLength={200} />

@@ -190,7 +190,7 @@ function AuthPage() {
             {mode === "signup" && (
               <label className="block text-sm font-medium">
                 Имя и фамилия
-                <Input className="mt-2" value={name} onChange={(event) => setName(event.target.value)} placeholder="Акмаль Абиджанов" required />
+                <Input className="mt-2" value={name} onChange={(event) => setName(event.target.value)} required />
               </label>
             )}
             <label className="block text-sm font-medium">
