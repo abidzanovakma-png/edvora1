@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bookmark, Heart, LogOut, UserRound } from "lucide-react";
+import { Bookmark, Heart, LogOut, Scale, UserRound } from "lucide-react";
 import {
   BadgeDollarSign,
   BookOpen,
@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/dialog";
 import { ProgramDetails } from "@/components/ProgramDetails";
 import { StatusSelect } from "@/components/StatusSelect";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { CompareBar, CompareDialog } from "@/components/CompareDialog";
 import { toast } from "sonner";
 import { programKey, useGender, useProgramLists, type ApplicationStatus, type Gender } from "@/lib/userData";
 
@@ -77,6 +79,7 @@ const fields = [
 // Колонки таблицы profiles, в которые сохраняются поля формы выше (по порядку).
 const fieldColumns = ["gpa", "ielts", "toefl", "sat", "language_exam", "extra_exams", "budget_usd"] as const;
 const docKeys = ["motivation", "recommendations", "portfolio"] as const;
+const MAX_COMPARE = 3;
 
 function numericValue(value: string) {
   const parsed = Number.parseFloat(value.trim().replace(",", "."));
@@ -127,6 +130,21 @@ function Index() {
   const navigate = useNavigate();
   const lists = useProgramLists();
   const [gender] = useGender();
+  // Программы, отмеченные для сравнения (до 3 штук).
+  const [compareKeys, setCompareKeys] = useState<string[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const toggleCompare = (program: Program) => {
+    const key = programKey(program);
+    if (compareKeys.includes(key)) {
+      setCompareKeys(compareKeys.filter((item) => item !== key));
+      return;
+    }
+    if (compareKeys.length >= MAX_COMPARE) {
+      toast.info(`Сравнивать можно до ${MAX_COMPARE} программ. Уберите одну, чтобы добавить другую.`);
+      return;
+    }
+    setCompareKeys([...compareKeys, key]);
+  };
 
   useEffect(() => {
     let active = true;
@@ -242,6 +260,15 @@ function Index() {
   }, [query, country, level, language, major, appliedCountries, appliedProfile, favorites, favoritesOnly, lists.isFavoriteProgram]);
 
 
+  // Оценки Safety / Match / Reach для таблицы сравнения.
+  const assessmentsByKey = useMemo(
+    () => new Map(filtered.map(({ program, assessment }) => [programKey(program), assessment] as const)),
+    [filtered],
+  );
+  const comparePrograms = compareKeys
+    .map((key) => programsData.find((program) => programKey(program) === key))
+    .filter((program): program is Program => Boolean(program));
+
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   const resetProfile = () => {
     setValues(Array(fields.length).fill(""));
@@ -296,7 +323,7 @@ function Index() {
             </span>
             Edvora
           </div>
-          <nav className="flex items-center gap-2" aria-label="Основная навигация">
+          <nav className="flex items-center gap-1 sm:gap-2" aria-label="Основная навигация">
             <Button variant="ghost" className="hidden sm:inline-flex" onClick={() => scrollTo("programs")}>Программы</Button>
             <Button variant={favoritesOnly ? "secondary" : "ghost"} size="sm" onClick={() => { setFavoritesOnly((current) => !current); scrollTo("programs"); }} aria-pressed={favoritesOnly}>
               <Heart className={favoritesOnly ? "fill-current" : ""} /> <span className="hidden sm:inline">Избранное</span><span>{favorites.length + lists.favoritePrograms.length}</span>
@@ -304,8 +331,9 @@ function Index() {
             <Button variant="ghost" size="sm" asChild>
               <Link to="/cabinet"><UserRound /> <span className="hidden sm:inline">Кабинет</span></Link>
             </Button>
-            <Button onClick={() => scrollTo("profile")}>Подобрать</Button>
+            <Button className="hidden sm:inline-flex" onClick={() => scrollTo("profile")}>Подобрать</Button>
             {accountName && <span className="hidden max-w-[160px] truncate text-sm font-medium text-muted-foreground md:inline">{accountName}</span>}
+            <ThemeToggle />
             <Button variant="outline" size="sm" onClick={signOut} aria-label="Выйти из аккаунта"><LogOut className="size-4" /><span className="hidden sm:inline">Выйти</span></Button>
           </nav>
         </div>
@@ -398,13 +426,22 @@ function Index() {
 
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {filtered.map(({ program, assessment }, index) => <ProgramCard key={`${program.university}-${program.program}-${index}`} program={program} assessment={assessment} onOpen={() => setSelected(program)} favorite={favorites.includes(program.university)} onFavorite={() => void toggleFavorite(program.university)} favoriteProgram={lists.isFavoriteProgram(programKey(program))} onFavoriteProgram={() => void lists.toggleFavoriteProgram(program).then((ok) => { if (!ok) toast.error("Не удалось сохранить программу в избранное."); })} gender={gender} status={lists.applicationFor(programKey(program))?.status ?? null} onStatus={(status) => void lists.setApplicationStatus(program, status).then((ok) => { if (!ok) toast.error("Не удалось сохранить статус заявки."); })} />)}
+            {filtered.map(({ program, assessment }, index) => <ProgramCard key={`${program.university}-${program.program}-${index}`} program={program} assessment={assessment} onOpen={() => setSelected(program)} favorite={favorites.includes(program.university)} onFavorite={() => void toggleFavorite(program.university)} favoriteProgram={lists.isFavoriteProgram(programKey(program))} onFavoriteProgram={() => void lists.toggleFavoriteProgram(program).then((ok) => { if (!ok) toast.error("Не удалось сохранить программу в избранное."); })} gender={gender} status={lists.applicationFor(programKey(program))?.status ?? null} onStatus={(status) => void lists.setApplicationStatus(program, status).then((ok) => { if (!ok) toast.error("Не удалось сохранить статус заявки."); })} comparing={compareKeys.includes(programKey(program))} onCompare={() => toggleCompare(program)} />)}
           </div>
           {filtered.length === 0 && <div className="rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center"><Heart className="mx-auto size-6 text-muted-foreground" /><p className="mt-3 font-medium">{favoritesOnly ? "В избранном пока ничего нет" : "По выбранным параметрам ничего не найдено"}</p></div>}
         </section>
       </main>
 
-      <footer className="border-t border-border/70 py-8 text-center text-sm text-muted-foreground">Edvora · данные отображаются исключительно из загруженной таблицы программ.</footer>
+      <CompareBar count={compareKeys.length} max={MAX_COMPARE} onOpen={() => setCompareOpen(true)} onClear={() => { setCompareKeys([]); setCompareOpen(false); }} />
+      <CompareDialog
+        open={compareOpen && comparePrograms.length >= 2}
+        onOpenChange={setCompareOpen}
+        programs={comparePrograms}
+        assessments={assessmentsByKey}
+        onRemove={(program) => setCompareKeys((current) => current.filter((key) => key !== programKey(program)))}
+      />
+
+      <footer className={`border-t border-border/70 py-8 text-center text-sm text-muted-foreground ${compareKeys.length > 0 ? "pb-24" : ""}`}>Edvora · данные отображаются исключительно из загруженной таблицы программ.</footer>
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
         {selected && <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto bg-background p-6 sm:rounded-xl">
@@ -447,9 +484,11 @@ type ProgramCardProps = {
   gender: Gender;
   status: ApplicationStatus | null;
   onStatus: (status: ApplicationStatus | null) => void;
+  comparing: boolean;
+  onCompare: () => void;
 };
 
-function ProgramCard({ program, assessment, onOpen, favorite, onFavorite, favoriteProgram, onFavoriteProgram, gender, status, onStatus }: ProgramCardProps) {
+function ProgramCard({ program, assessment, onOpen, favorite, onFavorite, favoriteProgram, onFavoriteProgram, gender, status, onStatus, comparing, onCompare }: ProgramCardProps) {
   const rows = [
     [GraduationCap, "Уровень", program.levels.join(", ")], [Languages, "Языки обучения", program.languages.join(", ")],
     [BookOpen, "Специальности", program.majors.join(", ")],
@@ -459,7 +498,7 @@ function ProgramCard({ program, assessment, onOpen, favorite, onFavorite, favori
 
   return <article className="card-elevate fade-up flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card">
     <div className="border-b border-border bg-muted/35 p-5"><div className="flex items-center justify-between gap-2"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span><div className="flex items-center gap-2">{assessment && <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${categoryStyles[assessment.category]}`}>{assessment.category}</span>}<Button type="button" variant="ghost" size="icon" className="size-8" onClick={onFavorite} title={favorite ? "Университет в избранном" : "Сохранить университет"} aria-label={favorite ? `Удалить ${program.university} из избранного` : `Добавить ${program.university} в избранное`} aria-pressed={favorite}><Heart className={favorite ? "fill-primary text-primary" : "text-muted-foreground"} /></Button><Button type="button" variant="ghost" size="icon" className="size-8" onClick={onFavoriteProgram} title={favoriteProgram ? "Программа в избранном" : "Сохранить программу"} aria-label={favoriteProgram ? `Удалить программу ${program.program} из избранного` : `Добавить программу ${program.program} в избранное`} aria-pressed={favoriteProgram}><Bookmark className={favoriteProgram ? "fill-primary text-primary" : "text-muted-foreground"} /></Button></div></div><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
-    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl>{assessment && <div className="rounded-lg border border-border/70 bg-muted/25 p-3"><p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Оценка профиля</p><dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p>{assessment.recommendations.length > 0 && <div className="mt-2 border-t border-border/60 pt-2"><p className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">Рекомендации</p><ul className="list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-muted-foreground">{assessment.recommendations.map((tip) => <li key={tip}>{tip}</li>)}</ul></div>}</div>}<a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="grid gap-2 pt-2"><StatusSelect gender={gender} value={status} onChange={onStatus} /><Button className="w-full" variant="secondary" onClick={onOpen}>Подробнее</Button></div></div>
+    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl>{assessment && <div className="rounded-lg border border-border/70 bg-muted/25 p-3"><p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Оценка профиля</p><dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p>{assessment.recommendations.length > 0 && <div className="mt-2 border-t border-border/60 pt-2"><p className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">Рекомендации</p><ul className="list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-muted-foreground">{assessment.recommendations.map((tip) => <li key={tip}>{tip}</li>)}</ul></div>}</div>}<a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="grid gap-2 pt-2"><StatusSelect gender={gender} value={status} onChange={onStatus} /><div className="grid grid-cols-2 gap-2"><Button variant={comparing ? "secondary" : "outline"} onClick={onCompare} aria-pressed={comparing}><Scale /> {comparing ? "В сравнении" : "Сравнить"}</Button><Button variant="secondary" onClick={onOpen}>Подробнее</Button></div></div></div>
 
   </article>;
 }

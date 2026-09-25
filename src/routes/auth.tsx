@@ -6,6 +6,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { isEmailNotConfirmed, translateAuthError } from "@/lib/authErrors";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const countries = ["Китай", "Южная Корея", "Япония"] as const;
 
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signup" | "login">("signup");
+  const [mode, setMode] = useState<"signup" | "login" | "forgot">("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,6 +66,15 @@ function AuthPage() {
     }
     setLoading(true);
     try {
+      if (mode === "forgot") {
+        // Письмо со ссылкой на страницу /reset-password, где задаётся новый пароль.
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (resetError) throw resetError;
+        setMessage(`Если аккаунт с почтой ${email} существует, мы отправили на неё ссылку для смены пароля. Проверьте входящие и папку «Спам».`);
+        return;
+      }
       if (mode === "signup") {
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
@@ -95,7 +105,12 @@ function AuthPage() {
         }
       }
     } catch (caught) {
-      setError(translateAuthError(caught, mode === "signup" ? "Не удалось зарегистрироваться." : "Не удалось войти."));
+      setError(
+        translateAuthError(
+          caught,
+          mode === "signup" ? "Не удалось зарегистрироваться." : mode === "forgot" ? "Не удалось отправить письмо." : "Не удалось войти.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -118,6 +133,13 @@ function AuthPage() {
     }
   };
 
+  const switchMode = (next: "signup" | "login" | "forgot") => {
+    setMode(next);
+    setError(null);
+    setMessage(null);
+    setResendEmail(null);
+  };
+
   const google = async () => {
     setError(null);
     setLoading(true);
@@ -134,7 +156,8 @@ function AuthPage() {
   };
 
   return (
-    <main className="soft-grid min-h-screen bg-background px-4 py-10 sm:py-16">
+    <main className="soft-grid relative min-h-screen bg-background px-4 py-10 sm:py-16">
+      <div className="absolute right-4 top-4"><ThemeToggle /></div>
       <div className="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[1fr_440px] lg:items-center">
       <section className="hidden px-8 lg:block">
         <div className="flex items-center gap-2 font-display text-xl font-bold text-primary">
@@ -170,21 +193,28 @@ function AuthPage() {
             Edvora
           </div>
           <h2 className="text-center font-display text-2xl font-bold">
-            {mode === "signup" ? "Создайте аккаунт" : "Вход в аккаунт"}
+            {mode === "signup" ? "Создайте аккаунт" : mode === "forgot" ? "Восстановление пароля" : "Вход в аккаунт"}
           </h2>
           <p className="mt-2 text-center text-sm text-muted-foreground">
             {mode === "signup"
               ? "Регистрация обязательна для доступа к каталогу программ."
-              : "Введите почту и пароль, указанные при регистрации."}
+              : mode === "forgot"
+                ? "Укажите почту аккаунта, и мы пришлём ссылку для смены пароля."
+                : "Введите почту и пароль, указанные при регистрации."}
           </p>
 
-          <Button variant="outline" className="mt-6 w-full" onClick={google} disabled={loading}>
-            Продолжить с Google
-          </Button>
+          {mode !== "forgot" && (
+            <>
+              <Button variant="outline" className="mt-6 w-full" onClick={google} disabled={loading}>
+                Продолжить с Google
+              </Button>
 
-          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" /> или по почте <span className="h-px flex-1 bg-border" />
-          </div>
+              <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="h-px flex-1 bg-border" /> или по почте <span className="h-px flex-1 bg-border" />
+              </div>
+            </>
+          )}
+          {mode === "forgot" && <div className="mt-6" />}
 
           <form className="space-y-4" onSubmit={submit}>
             {mode === "signup" && (
@@ -197,10 +227,19 @@ function AuthPage() {
               Электронная почта
               <Input className="mt-2" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" required />
             </label>
-            <label className="block text-sm font-medium">
-              Пароль
-              <Input className="mt-2" type="password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Минимум 6 символов" required />
-            </label>
+            {mode !== "forgot" && (
+              <label className="block text-sm font-medium">
+                <span className="flex items-center justify-between gap-2">
+                  Пароль
+                  {mode === "login" && (
+                    <Button type="button" variant="link" className="h-auto p-0 text-xs font-medium text-primary" onClick={() => switchMode("forgot")}>
+                      Забыли пароль?
+                    </Button>
+                  )}
+                </span>
+                <Input className="mt-2" type="password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Минимум 6 символов" required />
+              </label>
+            )}
 
             {mode === "signup" && (
               <div>
@@ -244,24 +283,19 @@ function AuthPage() {
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="size-4 animate-spin" />}
-              {mode === "signup" ? "Зарегистрироваться" : "Войти"}
+              {mode === "signup" ? "Зарегистрироваться" : mode === "forgot" ? "Отправить ссылку" : "Войти"}
             </Button>
           </form>
 
           <p className="mt-5 text-center text-sm text-muted-foreground">
-            {mode === "signup" ? "Уже есть аккаунт?" : "Ещё нет аккаунта?"}{" "}
+            {mode === "signup" ? "Уже есть аккаунт?" : mode === "forgot" ? "Вспомнили пароль?" : "Ещё нет аккаунта?"}{" "}
             <Button
               type="button"
               variant="link"
               className="h-auto p-0 font-medium text-primary"
-              onClick={() => {
-                setMode(mode === "signup" ? "login" : "signup");
-                setError(null);
-                setMessage(null);
-                setResendEmail(null);
-              }}
+              onClick={() => switchMode(mode === "login" ? "signup" : "login")}
             >
-              {mode === "signup" ? "Войти" : "Создать аккаунт"}
+              {mode === "login" ? "Создать аккаунт" : "Войти"}
             </Button>
           </p>
         </div>

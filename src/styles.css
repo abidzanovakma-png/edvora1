@@ -102,26 +102,28 @@
   --shadow-lift: 0 8px 18px -10px oklch(0.3 0.05 255 / 0.14), 0 24px 44px -26px oklch(0.3 0.05 255 / 0.28);
 }
 
+/* Тёмная тема в фирменных цветах Edvora (синий + бирюзовый). */
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
+  color-scheme: dark;
+  --background: oklch(0.17 0.03 255);
+  --foreground: oklch(0.95 0.01 245);
+  --card: oklch(0.215 0.035 255);
+  --card-foreground: oklch(0.95 0.01 245);
+  --popover: oklch(0.215 0.035 255);
+  --popover-foreground: oklch(0.95 0.01 245);
+  --primary: oklch(0.64 0.19 258);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.29 0.06 255);
+  --secondary-foreground: oklch(0.88 0.07 248);
+  --muted: oklch(0.25 0.03 255);
+  --muted-foreground: oklch(0.73 0.03 250);
+  --accent: oklch(0.72 0.12 205);
+  --accent-foreground: oklch(0.18 0.04 235);
+  --destructive: oklch(0.66 0.2 25);
+  --destructive-foreground: oklch(0.98 0.005 250);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
+  --ring: oklch(0.64 0.17 255);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -135,6 +137,9 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --gradient-hero: linear-gradient(120deg, oklch(0.2 0.045 258), oklch(0.19 0.035 225));
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.3), 0 12px 30px -18px oklch(0 0 0 / 0.65);
+  --shadow-lift: 0 8px 18px -10px oklch(0 0 0 / 0.45), 0 24px 44px -26px oklch(0 0 0 / 0.7);
 }
 
 @layer base {

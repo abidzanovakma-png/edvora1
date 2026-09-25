@@ -5,6 +5,10 @@ import {
   AlarmClock,
   ArrowLeft,
   Bookmark,
+  CalendarDays,
+  CalendarPlus,
+  Download,
+  List,
   CalendarClock,
   CircleCheck,
   Circle,
@@ -27,6 +31,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeSelect, StatusSelect } from "@/components/StatusSelect";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { TaskCalendar } from "@/components/TaskCalendar";
+import { downloadIcs, googleCalendarUrl } from "@/lib/calendarExport";
 import {
   currentUserId,
   findProgram,
@@ -215,6 +222,7 @@ function CabinetPage() {
             <Button variant="ghost" size="sm" asChild>
               <Link to="/"><ArrowLeft /> <span className="hidden sm:inline">Каталог программ</span><span className="sm:hidden">Каталог</span></Link>
             </Button>
+            <ThemeToggle />
             <Button variant="outline" size="sm" onClick={signOut} aria-label="Выйти из аккаунта"><LogOut className="size-4" /><span className="hidden sm:inline">Выйти</span></Button>
           </nav>
         </div>
@@ -454,6 +462,8 @@ const urgencyGroups: Array<[TaskUrgency, string]> = [
 function TasksTab({ tasks, reload }: { tasks: TaskRow[]; reload: () => Promise<void> }) {
   const [draft, setDraft] = useState<TaskDraft>(emptyDraft);
   const [saving, setSaving] = useState(false);
+  const [view, setView] = useState<"list" | "calendar">("list");
+  const exportable = tasks.filter((task) => task.due_at && !task.done);
 
   const grouped = useMemo(() => {
     const now = Date.now();
@@ -541,10 +551,29 @@ function TasksTab({ tasks, reload }: { tasks: TaskRow[]; reload: () => Promise<v
       </form>
 
       <div className="grid gap-6">
-        {grouped.length === 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="inline-flex rounded-lg bg-muted p-1" role="group" aria-label="Вид задач">
+            <Button type="button" size="sm" variant={view === "list" ? "outline" : "ghost"} className="h-7" aria-pressed={view === "list"} onClick={() => setView("list")}><List /> Список</Button>
+            <Button type="button" size="sm" variant={view === "calendar" ? "outline" : "ghost"} className="h-7" aria-pressed={view === "calendar"} onClick={() => setView("calendar")}><CalendarDays /> Календарь</Button>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={exportable.length === 0}
+            onClick={() => downloadIcs(tasks)}
+            title="Файл откроется в календаре телефона, Outlook или Apple Calendar, и напоминания придут прямо на телефон"
+          >
+            <Download /> В календарь телефона (.ics)
+          </Button>
+        </div>
+
+        {view === "calendar" && <TaskCalendar tasks={tasks} onSelectTask={edit} />}
+
+        {view === "list" && grouped.length === 0 && (
           <EmptyState icon={ClipboardList} title="Задач пока нет" text="Добавьте первую: например, «Сдать IELTS» с дедлайном, и сайт напомнит о ней заранее." />
         )}
-        {grouped.map(([urgency, label, items]) => (
+        {view === "list" && grouped.map(([urgency, label, items]) => (
           <section key={urgency}>
             <h3 className={`mb-2 text-sm font-semibold ${urgency === "overdue" ? "text-destructive" : "text-muted-foreground"}`}>{label} · {items.length}</h3>
             <ul className="grid gap-2">
@@ -565,6 +594,11 @@ function TasksTab({ tasks, reload }: { tasks: TaskRow[]; reload: () => Promise<v
                       {task.notes && <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{task.notes}</p>}
                     </div>
                     <div className="flex shrink-0 gap-1">
+                      {task.due_at && !task.done && (
+                        <Button type="button" variant="ghost" size="icon" className="size-8" asChild>
+                          <a href={googleCalendarUrl(task) ?? "#"} target="_blank" rel="noopener noreferrer" aria-label={`Добавить «${task.title}» в Google Календарь`} title="Добавить в Google Календарь"><CalendarPlus /></a>
+                        </Button>
+                      )}
                       <Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => edit(task)} aria-label={`Изменить задачу ${task.title}`}><Pencil /></Button>
                       <Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => void remove(task)} aria-label={`Удалить задачу ${task.title}`}><Trash /></Button>
                     </div>
