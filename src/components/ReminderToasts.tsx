@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { currentUserId, formatDateTime, taskUrgency, tasksNeedingReminder, type TaskRow } from "@/lib/userData";
+import * as repo from "@/lib/repo";
+import { formatDateTime, taskUrgency, tasksNeedingReminder } from "@/lib/userData";
 
 const SHOWN_KEY = "edvora:reminders-shown";
 
@@ -25,15 +25,9 @@ export function ReminderToasts() {
 
     let active = true;
     void (async () => {
-      const userId = await currentUserId();
-      if (!userId) return;
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("id, title, notes, due_at, remind_at, program_key, done, completed_at, created_at")
-        .eq("user_id", userId)
-        .eq("done", false);
-      if (!active || error || !data) return;
-      const due = tasksNeedingReminder(data as TaskRow[]);
+      const data = await repo.listTasks();
+      if (!active) return;
+      const due = tasksNeedingReminder(data);
       try {
         sessionStorage.setItem(SHOWN_KEY, "1");
       } catch {

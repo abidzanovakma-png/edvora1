@@ -21,7 +21,6 @@ import {
   Plus,
   Send,
   Trash,
-  TriangleAlert,
   UserRound,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,13 +33,13 @@ import { NativeSelect, StatusSelect } from "@/components/StatusSelect";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TaskCalendar } from "@/components/TaskCalendar";
 import { downloadIcs, googleCalendarUrl } from "@/lib/calendarExport";
+import * as repo from "@/lib/repo";
 import {
   currentUserId,
   findProgram,
   findUniversity,
   formatDateTime,
   fromLocalInput,
-  isMissingTableError,
   programKey,
   submittedLabel,
   taskUrgency,
@@ -132,18 +131,8 @@ function CabinetPage() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [favoriteUniversities, setFavoriteUniversities] = useState<string[]>([]);
-  const [missingTables, setMissingTables] = useState(false);
-
   const loadTasks = useCallback(async () => {
-    const userId = await currentUserId();
-    if (!userId) return;
-    const { data, error } = await supabase
-      .from("tasks")
-      .select("id, title, notes, due_at, remind_at, program_key, done, completed_at, created_at")
-      .eq("user_id", userId)
-      .order("due_at", { ascending: true, nullsFirst: false });
-    if (isMissingTableError(error)) setMissingTables(true);
-    setTasks((data ?? []) as TaskRow[]);
+    setTasks(await repo.listTasks());
   }, []);
 
   useEffect(() => {
@@ -153,40 +142,32 @@ function CabinetPage() {
       const user = userData.user;
       if (!user || !active) return;
       setEmail(user.email ?? "");
-      const [{ data: row, error: profileError }, { data: favs }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        supabase.from("favorite_universities").select("university").eq("user_id", user.id),
-      ]);
+      const [row, favs] = await Promise.all([repo.loadProfile(), repo.listFavoriteUniversities()]);
       if (!active) return;
-      if (profileError && isMissingTableError(profileError)) setMissingTables(true);
       const metaName = (user.user_metadata?.["full_name"] as string | undefined) ?? (user.user_metadata?.["name"] as string | undefined) ?? "";
       if (row) {
-        const record = row as Record<string, unknown>;
-        const text = (key: string) => (typeof record[key] === "string" ? (record[key] as string) : "");
-        const list = (key: string) => (Array.isArray(record[key]) ? (record[key] as string[]) : []);
-        const gender = record["gender"];
         setProfile({
-          full_name: text("full_name") || metaName,
-          gender: gender === "male" || gender === "female" ? gender : null,
-          city: text("city"),
-          target_countries: list("target_countries").length > 0 ? list("target_countries") : [...countries],
-          intended_level: text("intended_level"),
-          intended_major: text("intended_major"),
-          about: text("about"),
-          documents: list("documents"),
-          skipped_tests: list("skipped_tests"),
-          gpa: text("gpa"),
-          ielts: text("ielts"),
-          toefl: text("toefl"),
-          sat: text("sat"),
-          language_exam: text("language_exam"),
-          extra_exams: text("extra_exams"),
-          budget_usd: text("budget_usd"),
+          full_name: row.full_name || metaName,
+          gender: row.gender ?? null,
+          city: row.city ?? "",
+          target_countries: row.target_countries && row.target_countries.length > 0 ? row.target_countries : [...countries],
+          intended_level: row.intended_level ?? "",
+          intended_major: row.intended_major ?? "",
+          about: row.about ?? "",
+          documents: row.documents ?? [],
+          skipped_tests: row.skipped_tests ?? [],
+          gpa: row.gpa ?? "",
+          ielts: row.ielts ?? "",
+          toefl: row.toefl ?? "",
+          sat: row.sat ?? "",
+          language_exam: row.language_exam ?? "",
+          extra_exams: row.extra_exams ?? "",
+          budget_usd: row.budget_usd ?? "",
         });
       } else {
         setProfile({ ...emptyProfile, full_name: metaName });
       }
-      setFavoriteUniversities(favs?.map((item) => item.university) ?? []);
+      setFavoriteUniversities(favs);
       setProfileLoaded(true);
     })();
     void loadTasks();
@@ -234,19 +215,6 @@ function CabinetPage() {
           <h1 className="mt-1 font-display text-3xl font-bold">{profile.full_name ? `Привет, ${profile.full_name.split(" ")[0]}!` : "Привет!"}</h1>
           {email && <p className="mt-1 text-sm text-muted-foreground">{email}</p>}
         </div>
-
-        {(missingTables || lists.missingTables) && (
-          <div className="mt-6 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm">
-            <TriangleAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
-            <div>
-              <p className="font-semibold">База данных ещё не обновлена</p>
-              <p className="mt-1 text-muted-foreground">
-                Задачи, избранные программы и заявки пока не могут сохраняться: в базе нет новых таблиц. Нужно применить миграцию
-                {" "}<code className="rounded bg-muted px-1">20260925130000_…sql</code> из папки <code className="rounded bg-muted px-1">supabase/migrations</code>.
-              </p>
-            </div>
-          </div>
-        )}
 
         <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label="Сводка">
           <StatTile icon={ClipboardList} label="Открытых задач" value={String(openTasks.length)} hint={urgentTasks.length > 0 ? `${urgentTasks.length} требуют внимания` : "Всё под контролем"} alert={urgentTasks.length > 0} />
@@ -327,37 +295,28 @@ function ProfileTab({ profile, onSaved }: { profile: ProfileForm; onSaved: (prof
       return;
     }
     setSaving(true);
-    const userId = await currentUserId();
-    if (!userId) {
-      setSaving(false);
-      return;
-    }
     const clean = (value: string) => value.trim() || null;
-    const { error } = await supabase.from("profiles").upsert(
-      {
-        id: userId,
-        full_name: clean(form.full_name),
-        gender: form.gender,
-        city: clean(form.city),
-        target_countries: form.target_countries,
-        intended_level: clean(form.intended_level),
-        intended_major: clean(form.intended_major),
-        about: clean(form.about),
-        documents: form.documents,
-        skipped_tests: form.skipped_tests,
-        gpa: clean(form.gpa),
-        ielts: clean(form.ielts),
-        toefl: clean(form.toefl),
-        sat: clean(form.sat),
-        language_exam: clean(form.language_exam),
-        extra_exams: clean(form.extra_exams),
-        budget_usd: clean(form.budget_usd),
-      },
-      { onConflict: "id" },
-    );
+    const ok = await repo.saveProfile({
+      full_name: clean(form.full_name),
+      gender: form.gender,
+      city: clean(form.city),
+      target_countries: form.target_countries,
+      intended_level: clean(form.intended_level),
+      intended_major: clean(form.intended_major),
+      about: clean(form.about),
+      documents: form.documents,
+      skipped_tests: form.skipped_tests,
+      gpa: clean(form.gpa),
+      ielts: clean(form.ielts),
+      toefl: clean(form.toefl),
+      sat: clean(form.sat),
+      language_exam: clean(form.language_exam),
+      extra_exams: clean(form.extra_exams),
+      budget_usd: clean(form.budget_usd),
+    });
     setSaving(false);
-    if (error) {
-      toast.error(isMissingTableError(error) ? "Профиль не сохранён: база ещё не обновлена (нужна миграция)." : "Не удалось сохранить профиль. Попробуйте ещё раз.");
+    if (!ok) {
+      toast.error("Не удалось сохранить профиль. Попробуйте ещё раз.");
       return;
     }
     onSaved(form);
@@ -435,7 +394,7 @@ function ProfileTab({ profile, onSaved }: { profile: ProfileForm; onSaved: (prof
       </Card>
 
       <Card title="О себе">
-        <Textarea value={form.about} onChange={(event) => set("about", event.target.value)} placeholder="Достижения, олимпиады, волонтёрство, чем хотите заниматься" maxLength={2000} rows={4} />
+        <Textarea value={form.about} onChange={(event) => set("about", event.target.value)} placeholder="Достижения, олимпиады, волонтёрство, чем хотите заниматься" maxLength={1000} rows={4} />
       </Card>
 
       <div className="flex flex-wrap gap-3">
@@ -477,11 +436,6 @@ function TasksTab({ tasks, reload }: { tasks: TaskRow[]; reload: () => Promise<v
     const title = draft.title.trim();
     if (!title) return;
     setSaving(true);
-    const userId = await currentUserId();
-    if (!userId) {
-      setSaving(false);
-      return;
-    }
     const payload = {
       title,
       notes: draft.notes.trim() || null,
@@ -489,12 +443,10 @@ function TasksTab({ tasks, reload }: { tasks: TaskRow[]; reload: () => Promise<v
       remind_at: fromLocalInput(draft.remind),
       program_key: draft.programKey || null,
     };
-    const { error } = draft.id
-      ? await supabase.from("tasks").update(payload).eq("id", draft.id).eq("user_id", userId)
-      : await supabase.from("tasks").insert({ ...payload, user_id: userId });
+    const ok = await repo.saveTask(payload, draft.id);
     setSaving(false);
-    if (error) {
-      toast.error(isMissingTableError(error) ? "Задача не сохранена: база ещё не обновлена (нужна миграция)." : "Не удалось сохранить задачу.");
+    if (!ok) {
+      toast.error("Не удалось сохранить задачу. Попробуйте ещё раз.");
       return;
     }
     toast.success(draft.id ? "Задача обновлена" : "Задача добавлена");
@@ -503,16 +455,15 @@ function TasksTab({ tasks, reload }: { tasks: TaskRow[]; reload: () => Promise<v
   };
 
   const toggleDone = async (task: TaskRow) => {
-    const done = !task.done;
-    const { error } = await supabase.from("tasks").update({ done, completed_at: done ? new Date().toISOString() : null }).eq("id", task.id);
-    if (error) toast.error("Не удалось обновить задачу.");
+    const ok = await repo.setTaskDone(task, !task.done);
+    if (!ok) toast.error("Не удалось обновить задачу.");
     await reload();
   };
 
   const remove = async (task: TaskRow) => {
     if (!window.confirm(`Удалить задачу «${task.title}»?`)) return;
-    const { error } = await supabase.from("tasks").delete().eq("id", task.id);
-    if (error) toast.error("Не удалось удалить задачу.");
+    const ok = await repo.deleteTask(task.id);
+    if (!ok) toast.error("Не удалось удалить задачу.");
     if (draft.id === task.id) setDraft(emptyDraft);
     await reload();
   };
@@ -541,7 +492,7 @@ function TasksTab({ tasks, reload }: { tasks: TaskRow[]; reload: () => Promise<v
             <NativeSelect value={draft.programKey} onChange={(value) => setDraft({ ...draft, programKey: value })} options={[["", "Без привязки"], ...programsData.map((program) => [programKey(program), `${program.university} — ${program.program}`] as [string, string])]} />
           </Field>
           <Field label="Заметки">
-            <Textarea value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} maxLength={2000} rows={3} />
+            <Textarea value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} maxLength={1000} rows={3} />
           </Field>
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={saving || !draft.title.trim()}>{saving ? <Loader2 className="animate-spin" /> : draft.id ? <Pencil /> : <Plus />} {draft.id ? "Сохранить" : "Добавить задачу"}</Button>

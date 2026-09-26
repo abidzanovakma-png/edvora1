@@ -1,10 +1,11 @@
 // Общие функции для данных личного кабинета: избранные программы,
-// заявки и их статусы, задачи. Всё хранится в базе (Lovable Cloud),
-// каждая таблица защищена RLS — пользователь видит только свои строки.
+// заявки и их статусы, задачи. Чтение и запись идут через src/lib/repo.ts,
+// который сам выбирает, где хранить данные (таблицы или временное хранилище).
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import programsData from "@/data/programs.json";
+import * as repo from "@/lib/repo";
 
 export type CatalogProgram = (typeof programsData)[number];
 
@@ -130,19 +131,12 @@ export function tasksNeedingReminder(tasks: TaskRow[], now = Date.now()) {
 export function useProgramLists() {
   const [favoritePrograms, setFavoritePrograms] = useState<ProgramRef[]>([]);
   const [applications, setApplications] = useState<ApplicationRow[]>([]);
-  const [missingTables, setMissingTables] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const reload = useCallback(async () => {
-    const userId = await currentUserId();
-    if (!userId) return;
-    const [favorites, apps] = await Promise.all([
-      supabase.from("favorite_programs").select("program_key, university, program").eq("user_id", userId).order("created_at", { ascending: false }),
-      supabase.from("applications").select("id, program_key, university, program, status, submitted_at, updated_at").eq("user_id", userId).order("updated_at", { ascending: false }),
-    ]);
-    setMissingTables(isMissingTableError(favorites.error) || isMissingTableError(apps.error));
-    setFavoritePrograms(favorites.data ?? []);
-    setApplications((apps.data ?? []) as ApplicationRow[]);
+    const [favorites, apps] = await Promise.all([repo.listFavoritePrograms(), repo.listApplications()]);
+    setFavoritePrograms(favorites);
+    setApplications(apps);
     setLoaded(true);
   }, []);
 
@@ -160,16 +154,11 @@ export function useProgramLists() {
       const ref = programRef(program);
       const was = favoritePrograms.some((item) => item.program_key === ref.program_key);
       setFavoritePrograms((current) => (was ? current.filter((item) => item.program_key !== ref.program_key) : [ref, ...current]));
-      const userId = await currentUserId();
-      if (!userId) return false;
-      const result = was
-        ? await supabase.from("favorite_programs").delete().eq("user_id", userId).eq("program_key", ref.program_key)
-        : await supabase.from("favorite_programs").insert({ user_id: userId, ...ref });
-      if (result.error) {
+      const ok = was ? await repo.removeFavoriteProgram(ref.program_key) : await repo.addFavoriteProgram(ref);
+      if (!ok) {
         setFavoritePrograms((current) => (was ? [ref, ...current] : current.filter((item) => item.program_key !== ref.program_key)));
-        return false;
       }
-      return true;
+      return ok;
     },
     [favoritePrograms],
   );
@@ -183,27 +172,18 @@ export function useProgramLists() {
   const setApplicationStatus = useCallback(
     async (program: { university: string; program: string }, status: ApplicationStatus | null) => {
       const ref = programRef(program);
-      const userId = await currentUserId();
-      if (!userId) return false;
       const previous = applications;
       if (status === null) {
         setApplications((current) => current.filter((item) => item.program_key !== ref.program_key));
-        const { error } = await supabase.from("applications").delete().eq("user_id", userId).eq("program_key", ref.program_key);
-        if (error) {
-          setApplications(previous);
-          return false;
-        }
-        return true;
+        const ok = await repo.deleteApplication(ref.program_key);
+        if (!ok) setApplications(previous);
+        return ok;
       }
       const existing = applications.find((item) => item.program_key === ref.program_key);
       const submitted_at = status === "submitted" ? existing?.submitted_at ?? new Date().toISOString() : null;
-      const { data, error } = await supabase
-        .from("applications")
-        .upsert({ user_id: userId, ...ref, status, submitted_at }, { onConflict: "user_id,program_key" })
-        .select("id, program_key, university, program, status, submitted_at, updated_at")
-        .single();
-      if (error || !data) return false;
-      setApplications((current) => [data as ApplicationRow, ...current.filter((item) => item.program_key !== ref.program_key)]);
+      const saved = await repo.saveApplication(ref, status, submitted_at);
+      if (!saved) return false;
+      setApplications((current) => [saved, ...current.filter((item) => item.program_key !== ref.program_key)]);
       return true;
     },
     [applications],
@@ -211,7 +191,6 @@ export function useProgramLists() {
 
   return {
     loaded,
-    missingTables,
     favoritePrograms,
     applications,
     reload,
@@ -227,12 +206,9 @@ export function useGender() {
   const [gender, setGender] = useState<Gender>(null);
   useEffect(() => {
     let active = true;
-    void (async () => {
-      const userId = await currentUserId();
-      if (!userId) return;
-      const { data } = await supabase.from("profiles").select("gender").eq("id", userId).maybeSingle();
-      if (active && data && (data.gender === "male" || data.gender === "female")) setGender(data.gender);
-    })();
+    void repo.loadProfile().then((profile) => {
+      if (active && profile?.gender) setGender(profile.gender);
+    });
     return () => {
       active = false;
     };

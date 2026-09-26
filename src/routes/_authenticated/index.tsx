@@ -35,6 +35,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { CompareBar, CompareDialog } from "@/components/CompareDialog";
 import { toast } from "sonner";
 import { programKey, useGender, useProgramLists, type ApplicationStatus, type Gender } from "@/lib/userData";
+import * as repo from "@/lib/repo";
 
 type Program = (typeof programsData)[number];
 type Docs = { motivation: boolean; recommendations: boolean; portfolio: boolean };
@@ -152,21 +153,13 @@ function Index() {
       const { data: userData } = await supabase.auth.getUser();
       const user = userData.user;
       if (!user || !active) return;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
-      const { data: savedFavorites } = await supabase
-        .from("favorite_universities")
-        .select("university")
-        .eq("user_id", user.id);
+      const [profile, savedFavorites] = await Promise.all([repo.loadProfile(), repo.listFavoriteUniversities()]);
       if (!active) return;
       const metaName =
         (user.user_metadata?.["full_name"] as string | undefined) ??
         (user.user_metadata?.["name"] as string | undefined);
       setAccountName(profile?.full_name ?? metaName ?? user.email ?? "");
-      setFavorites(savedFavorites?.map((item) => item.university) ?? []);
+      setFavorites(savedFavorites);
       const saved = profile?.target_countries ?? [];
       if (saved.length > 0) {
         setTargetCountries(saved);
@@ -294,22 +287,12 @@ function Index() {
       // Сохраняем профиль студента, чтобы он был в личном кабинете и при следующем входе.
       const clean = (value: string | undefined) => value?.trim() || null;
       const studentFields = Object.fromEntries(fieldColumns.map((column, index) => [column, clean(values[index])]));
-      const { error } = await supabase
-        .from("profiles")
-        .upsert(
-          {
-            id: data.user.id,
-            target_countries: targetCountries,
-            ...studentFields,
-            skipped_tests: fieldColumns.filter((_, index) => noTest[index]),
-            documents: docKeys.filter((key) => docs[key]),
-          },
-          { onConflict: "id" },
-        );
-      // Если миграция ещё не применена, новых колонок нет — сохраняем хотя бы страны, как раньше.
-      if (error) {
-        await supabase.from("profiles").upsert({ id: data.user.id, target_countries: targetCountries }, { onConflict: "id" });
-      }
+      await repo.saveProfile({
+        target_countries: targetCountries,
+        ...studentFields,
+        skipped_tests: fieldColumns.filter((_, index) => noTest[index]),
+        documents: docKeys.filter((key) => docs[key]),
+      });
     })();
   };
 
