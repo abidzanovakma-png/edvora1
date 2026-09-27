@@ -5,11 +5,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import programsData from "@/data/programs.json";
 import { isEmailNotConfirmed, translateAuthError } from "@/lib/authErrors";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SiteFooter } from "@/components/SiteFooter";
 
 const countries = ["Китай", "Южная Корея", "Япония"] as const;
+
+const universityCount = new Set(programsData.map((program) => program.university)).size;
+const highlights = [
+  `${universityCount} университетов Китая, Японии и Южной Кореи в одном каталоге`,
+  "Подбор по вашему профилю: шансы Safety / Match / Reach",
+  "Сравнение программ по требованиям, стоимости и рейтингу",
+  "Личный кабинет: задачи, дедлайны, избранное и статусы заявок",
+];
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -18,7 +27,7 @@ export const Route = createFileRoute("/auth")({
       {
         name: "description",
         content:
-          "Создайте аккаунт Edvora, чтобы получить доступ к каталогу университетов Китая, Японии и Южной Кореи и сохранить свой профиль.",
+          "Edvora — платформа, которая помогает искать университеты Китая, Японии и Южной Кореи и подбирать программы по вашим баллам и бюджету.",
       },
       { property: "og:title", content: "Регистрация и вход — Edvora" },
       {
@@ -169,14 +178,16 @@ function AuthPage() {
           Edvora
         </div>
         <div className="mt-14">
-          <h1 className="max-w-lg font-display text-4xl font-bold leading-tight text-foreground">
-            Аккаунт открывает доступ к каталогу университетов
+          <p className="text-sm font-semibold uppercase tracking-wide text-accent">Платформа для поиска университетов</p>
+          <h1 className="mt-3 max-w-lg font-display text-4xl font-bold leading-tight text-foreground">
+            Edvora поможет найти ваш университет в Азии
           </h1>
           <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
-            Профиль сохраняется: в следующий раз ваши показатели, страны интереса и подобранные программы будут на месте.
+            Edvora — это платформа, которая помогает абитуриентам искать и выбирать университеты в Китае, Японии и Южной Корее.
+            Вы указываете свои баллы, экзамены и бюджет, а мы показываем, какие программы вам подходят и какие у вас шансы на поступление.
           </p>
           <ul className="mt-8 grid gap-3 text-sm text-foreground">
-            {["30 университетов Китая, Японии и Южной Кореи", "Требования каждой страны в подробностях карточки", "Оценка Safety / Match / Reach по вашему профилю"].map((item) => (
+            {highlights.map((item) => (
               <li key={item} className="flex items-start gap-3 rounded-lg border border-border bg-card p-3 shadow-card">
                 <ShieldCheck className="mt-0.5 size-4 shrink-0 text-accent" /> {item}
               </li>
@@ -190,11 +201,17 @@ function AuthPage() {
 
       <section className="flex items-center justify-center">
         <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-card sm:p-9">
-          <div className="mb-7 flex items-center justify-center gap-2 font-display text-xl font-bold text-primary lg:hidden">
-            <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground">
-              <GraduationCap className="size-5" />
-            </span>
-            Edvora
+          <div className="mb-7 text-center lg:hidden">
+            <div className="flex items-center justify-center gap-2 font-display text-xl font-bold text-primary">
+              <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground">
+                <GraduationCap className="size-5" />
+              </span>
+              Edvora
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              Платформа, которая помогает искать университеты в Китае, Японии и Южной Корее, подбирать программы по вашим баллам
+              и бюджету и не пропускать дедлайны. <Link to="/about" className="font-medium text-primary hover:underline">Подробнее</Link>
+            </p>
           </div>
           <h2 className="text-center font-display text-2xl font-bold">
             {mode === "signup" ? "Создайте аккаунт" : mode === "forgot" ? "Восстановление пароля" : "Вход в аккаунт"}
