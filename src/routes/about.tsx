@@ -91,6 +91,32 @@ function AboutPage() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-6xl px-4 pt-14 sm:px-6">
+          <div className="grid gap-8 rounded-2xl border border-border bg-card p-6 shadow-card sm:p-10 md:grid-cols-[220px_1fr]">
+            <div>
+              <h2 className="font-display text-2xl font-bold">Кто мы</h2>
+              <div className="mt-4 flex items-center gap-3">
+                <span className="grid size-12 place-items-center rounded-xl bg-primary font-display text-xl font-bold text-primary-foreground">5</span>
+                <p className="text-sm leading-snug text-muted-foreground">человек<br />в команде</p>
+              </div>
+            </div>
+            <div className="space-y-4 leading-relaxed text-muted-foreground">
+              <p>
+                <span className="font-semibold text-foreground">Edvora</span> — амбициозный образовательный стартап, созданный командой из пяти мотивированных
+                и целеустремлённых людей. Мы объединили наши идеи, знания и навыки, чтобы создать современную платформу, которая помогает
+                студентам находить подходящие университеты и программы и удобнее организовывать свой путь к поступлению.
+              </p>
+              <p>
+                Мы стремимся сделать процесс поступления более простым, понятным и доступным. Edvora — это не просто проект, а идея,
+                которую мы хотим развивать вместе с пользователями и превращать в полезный продукт для студентов по всему миру.
+              </p>
+              <p className="font-medium text-foreground">
+                Мы верим в нашу идею и надеемся, что Edvora станет для вас полезным инструментом на пути к вашему будущему.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <section className="mx-auto grid max-w-6xl gap-8 px-4 py-14 sm:px-6 md:grid-cols-2">
           <div>
             <h2 className="font-display text-2xl font-bold">Зачем мы это делаем</h2>
@@ -169,14 +195,16 @@ function AboutPage() {
           <div className="rounded-2xl border border-border bg-card p-6 shadow-card sm:p-10">
             <h2 className="font-display text-2xl font-bold">Свяжитесь с нами</h2>
             <p className="mt-3 max-w-2xl text-muted-foreground">
-              Есть вопрос о поступлении, нашли неточность в требованиях или хотите предложить идею? Напишите нам, мы отвечаем по всем вопросам.
+              Есть вопрос о поступлении, нашли неточность в требованиях или хотите предложить идею? Звоните или пишите, мы отвечаем по всем вопросам.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button asChild>
-                <a href={mailtoLink}><Mail /> {siteContacts.email}</a>
-              </Button>
+              {mailtoLink && (
+                <Button asChild>
+                  <a href={mailtoLink}><Mail /> {siteContacts.email}</a>
+                </Button>
+              )}
               {siteContacts.call && (
-                <Button variant="outline" asChild>
+                <Button variant={mailtoLink ? "outline" : "default"} asChild>
                   <a href={telLink}><Phone /> {siteContacts.phoneDisplay}</a>
                 </Button>
               )}

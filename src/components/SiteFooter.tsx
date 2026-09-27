@@ -32,11 +32,13 @@ export function SiteFooter({ className = "" }: { className?: string }) {
         <div>
           <p className="text-sm font-semibold">По всем вопросам</p>
           <ul className="mt-3 grid gap-2 text-sm">
+            {mailtoLink && (
             <li>
               <a href={mailtoLink} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground hover:underline">
                 <Mail className="size-4 shrink-0 text-accent" /> {siteContacts.email}
               </a>
             </li>
+            )}
             {siteContacts.call && (
               <li>
                 <a href={telLink} className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground hover:underline">
