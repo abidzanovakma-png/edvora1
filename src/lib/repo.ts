@@ -17,6 +17,7 @@
 // строки удаляются. Пользователь ничего не теряет.
 
 import { supabase } from "@/integrations/supabase/client";
+import { getUserId } from "@/lib/session";
 import type { ApplicationRow, ApplicationStatus, Gender, ProgramRef, TaskRow } from "@/lib/userData";
 
 export type Mode = "tables" | "fallback";
@@ -93,8 +94,7 @@ function isMissingSchema(error: { code?: string; message?: string } | null | und
 }
 
 async function userId() {
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id ?? null;
+  return getUserId();
 }
 
 function newId() {

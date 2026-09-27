@@ -35,6 +35,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { TaskCalendar } from "@/components/TaskCalendar";
 import { downloadIcs, googleCalendarUrl } from "@/lib/calendarExport";
 import * as repo from "@/lib/repo";
+import { getCurrentUser } from "@/lib/session";
 import {
   currentUserId,
   findProgram,
@@ -132,15 +133,16 @@ function CabinetPage() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [favoriteUniversities, setFavoriteUniversities] = useState<string[]>([]);
+  const [tasksLoaded, setTasksLoaded] = useState(false);
   const loadTasks = useCallback(async () => {
     setTasks(await repo.listTasks());
+    setTasksLoaded(true);
   }, []);
 
   useEffect(() => {
     let active = true;
     void (async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
+      const user = await getCurrentUser();
       if (!user || !active) return;
       setEmail(user.email ?? "");
       const [row, favs] = await Promise.all([repo.loadProfile(), repo.listFavoriteUniversities()]);
@@ -256,7 +258,7 @@ function CabinetPage() {
             {profileLoaded ? <ProfileTab profile={profile} onSaved={setProfile} /> : <LoadingBlock />}
           </TabsContent>
           <TabsContent value="tasks" className="mt-5">
-            <TasksTab tasks={tasks} reload={loadTasks} />
+            {tasksLoaded ? <TasksTab tasks={tasks} reload={loadTasks} /> : <LoadingBlock text="Загружаем задачи…" />}
           </TabsContent>
           <TabsContent value="favorites" className="mt-5">
             <FavoritesTab
@@ -756,10 +758,10 @@ function EmptyState({ icon: Icon, title, text }: { icon: typeof Heart; title: st
   );
 }
 
-function LoadingBlock() {
+function LoadingBlock({ text = "Загружаем профиль…" }: { text?: string }) {
   return (
     <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card py-14 text-sm text-muted-foreground">
-      <Loader2 className="size-4 animate-spin" /> Загружаем профиль…
+      <Loader2 className="size-4 animate-spin" /> {text}
     </div>
   );
 }

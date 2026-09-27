@@ -3,9 +3,9 @@
 // который сам выбирает, где хранить данные (таблицы или временное хранилище).
 
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import programsData from "@/data/programs.json";
 import * as repo from "@/lib/repo";
+import { getUserId } from "@/lib/session";
 
 export type CatalogProgram = (typeof programsData)[number];
 
@@ -70,8 +70,7 @@ export function isMissingTableError(error: { code?: string; message?: string } |
 }
 
 export async function currentUserId() {
-  const { data } = await supabase.auth.getUser();
-  return data.user?.id ?? null;
+  return getUserId();
 }
 
 // ---------- Даты ----------
@@ -181,8 +180,20 @@ export function useProgramLists() {
       }
       const existing = applications.find((item) => item.program_key === ref.program_key);
       const submitted_at = status === "submitted" ? existing?.submitted_at ?? new Date().toISOString() : null;
+      // Сразу показываем новый статус, не дожидаясь ответа сервера.
+      const optimistic: ApplicationRow = {
+        id: existing?.id ?? `pending-${ref.program_key}`,
+        ...ref,
+        status,
+        submitted_at,
+        updated_at: new Date().toISOString(),
+      };
+      setApplications((current) => [optimistic, ...current.filter((item) => item.program_key !== ref.program_key)]);
       const saved = await repo.saveApplication(ref, status, submitted_at);
-      if (!saved) return false;
+      if (!saved) {
+        setApplications(previous);
+        return false;
+      }
       setApplications((current) => [saved, ...current.filter((item) => item.program_key !== ref.program_key)]);
       return true;
     },

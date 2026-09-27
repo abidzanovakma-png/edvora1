@@ -37,6 +37,7 @@ import { CompareBar, CompareDialog } from "@/components/CompareDialog";
 import { toast } from "sonner";
 import { programKey, useGender, useProgramLists, type ApplicationStatus, type Gender } from "@/lib/userData";
 import * as repo from "@/lib/repo";
+import { getCurrentUser, getUserId } from "@/lib/session";
 
 type Program = (typeof programsData)[number];
 type Docs = { motivation: boolean; recommendations: boolean; portfolio: boolean };
@@ -151,8 +152,7 @@ function Index() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
+      const user = await getCurrentUser();
       if (!user || !active) return;
       const [profile, savedFavorites] = await Promise.all([repo.loadProfile(), repo.listFavoriteUniversities()]);
       if (!active) return;
@@ -193,11 +193,11 @@ function Index() {
   const toggleFavorite = async (university: string) => {
     const wasFavorite = favorites.includes(university);
     setFavorites((current) => wasFavorite ? current.filter((item) => item !== university) : [...current, university]);
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) return;
+    const userId = await getUserId();
+    if (!userId) return;
     const result = wasFavorite
-      ? await supabase.from("favorite_universities").delete().eq("user_id", data.user.id).eq("university", university)
-      : await supabase.from("favorite_universities").insert({ user_id: data.user.id, university });
+      ? await supabase.from("favorite_universities").delete().eq("user_id", userId).eq("university", university)
+      : await supabase.from("favorite_universities").insert({ user_id: userId, university });
     if (result.error) {
       setFavorites((current) => wasFavorite ? [...current, university] : current.filter((item) => item !== university));
     }
@@ -283,8 +283,6 @@ function Index() {
     setCountry("Все страны");
     scrollTo("programs");
     void (async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) return;
       // Сохраняем профиль студента, чтобы он был в личном кабинете и при следующем входе.
       const clean = (value: string | undefined) => value?.trim() || null;
       const studentFields = Object.fromEntries(fieldColumns.map((column, index) => [column, clean(values[index])]));
