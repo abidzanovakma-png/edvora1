@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeSelect, StatusSelect } from "@/components/StatusSelect";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SiteFooter } from "@/components/SiteFooter";
 import { TaskCalendar } from "@/components/TaskCalendar";
 import { downloadIcs, googleCalendarUrl } from "@/lib/calendarExport";
 import * as repo from "@/lib/repo";
@@ -270,6 +271,7 @@ function CabinetPage() {
           </TabsContent>
         </Tabs>
       </main>
+      <SiteFooter />
     </div>
   );
 }

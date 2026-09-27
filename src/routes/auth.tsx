@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { GraduationCap, Loader2, Mail, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { isEmailNotConfirmed, translateAuthError } from "@/lib/authErrors";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const countries = ["Китай", "Южная Корея", "Япония"] as const;
 
@@ -156,6 +157,7 @@ function AuthPage() {
   };
 
   return (
+    <>
     <main className="soft-grid relative min-h-screen bg-background px-4 py-10 sm:py-16">
       <div className="absolute right-4 top-4"><ThemeToggle /></div>
       <div className="mx-auto grid w-full max-w-5xl gap-8 lg:grid-cols-[1fr_440px] lg:items-center">
@@ -181,7 +183,9 @@ function AuthPage() {
             ))}
           </ul>
         </div>
-        <p className="mt-10 text-xs text-muted-foreground">Edvora · данные только из загруженной базы программ.</p>
+        <p className="mt-10 text-xs text-muted-foreground">
+          Edvora · данные только из загруженной базы программ. <Link to="/about" className="font-medium text-primary hover:underline">Подробнее о нас</Link>
+        </p>
       </section>
 
       <section className="flex items-center justify-center">
@@ -309,5 +313,7 @@ function AuthPage() {
       </section>
       </div>
     </main>
+    <SiteFooter />
+    </>
   );
 }

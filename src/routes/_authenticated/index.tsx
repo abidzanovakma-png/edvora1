@@ -32,6 +32,7 @@ import {
 import { ProgramDetails } from "@/components/ProgramDetails";
 import { StatusSelect } from "@/components/StatusSelect";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SiteFooter } from "@/components/SiteFooter";
 import { CompareBar, CompareDialog } from "@/components/CompareDialog";
 import { toast } from "sonner";
 import { programKey, useGender, useProgramLists, type ApplicationStatus, type Gender } from "@/lib/userData";
@@ -424,7 +425,7 @@ function Index() {
         onRemove={(program) => setCompareKeys((current) => current.filter((key) => key !== programKey(program)))}
       />
 
-      <footer className={`border-t border-border/70 py-8 text-center text-sm text-muted-foreground ${compareKeys.length > 0 ? "pb-24" : ""}`}>Edvora · данные отображаются исключительно из загруженной таблицы программ.</footer>
+      <SiteFooter className={compareKeys.length > 0 ? "pb-20" : ""} />
 
       <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)}>
         {selected && <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto bg-background p-6 sm:rounded-xl">
