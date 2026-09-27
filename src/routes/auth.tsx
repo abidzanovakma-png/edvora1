@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import programsData from "@/data/programs.json";
 import { toast } from "sonner";
-import { isEmailNotConfirmed, translateAuthError } from "@/lib/authErrors";
+import { isEmailNotConfirmed, passwordProblem, translateAuthError } from "@/lib/authErrors";
+import { PasswordInput } from "@/components/PasswordInput";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SiteFooter } from "@/components/SiteFooter";
 
@@ -74,6 +75,13 @@ function AuthPage() {
     if (mode === "signup" && targets.length === 0) {
       setError("Выберите хотя бы одну страну интереса.");
       return;
+    }
+    if (mode === "signup") {
+      const problem = passwordProblem(password);
+      if (problem) {
+        setError(problem);
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -271,7 +279,7 @@ function AuthPage() {
                     </Button>
                   )}
                 </span>
-                <Input className="mt-2" type="password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Минимум 6 символов" required />
+                <PasswordInput className="mt-2" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Минимум 6 символов, любые символы" autoComplete={mode === "signup" ? "new-password" : "current-password"} required />
               </label>
             )}
 

@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { translateAuthError } from "@/lib/authErrors";
+import { passwordProblem, translateAuthError } from "@/lib/authErrors";
+import { PasswordInput } from "@/components/PasswordInput";
 
 // Сюда ведёт ссылка из письма «Восстановление пароля».
 // Supabase сам разбирает токен из адреса и создаёт временную сессию,
@@ -53,8 +54,9 @@ function ResetPasswordPage() {
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
-    if (password.length < 6) {
-      setError("Пароль слишком короткий: минимум 6 символов.");
+    const problem = passwordProblem(password);
+    if (problem) {
+      setError(problem);
       return;
     }
     if (password !== confirm) {
@@ -108,11 +110,11 @@ function ResetPasswordPage() {
             <form className="mt-6 space-y-4" onSubmit={submit}>
               <label className="block text-sm font-medium">
                 Новый пароль
-                <Input className="mt-2" type="password" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Минимум 6 символов" autoComplete="new-password" required />
+                <PasswordInput className="mt-2" minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Минимум 6 символов, любые символы" autoComplete="new-password" required />
               </label>
               <label className="block text-sm font-medium">
                 Повторите пароль
-                <Input className="mt-2" type="password" minLength={6} value={confirm} onChange={(event) => setConfirm(event.target.value)} autoComplete="new-password" required />
+                <PasswordInput className="mt-2" minLength={6} value={confirm} onChange={(event) => setConfirm(event.target.value)} autoComplete="new-password" required />
               </label>
               {error && <p className="text-sm font-medium text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={saving}>
