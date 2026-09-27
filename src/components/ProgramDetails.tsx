@@ -182,7 +182,7 @@ export function ProgramDetails({ program }: { program: DetailProgram }) {
                 </div>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">Требования по этой стране отсутствуют в загруженном файле.</p>
+              <p className="text-sm text-muted-foreground">Требования по этой стране пока не добавлены в базу.</p>
             )}
           </TabsContent>
 

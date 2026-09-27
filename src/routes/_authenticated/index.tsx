@@ -343,7 +343,7 @@ function Index() {
                 <Button variant="ghost" onClick={() => scrollTo("programs")}>Смотреть каталог</Button>
               </div>
               <p className="mt-5 flex max-w-xl items-center gap-2 text-xs text-muted-foreground">
-                <ShieldCheck className="size-4 shrink-0" /> Все требования отображаются только из загруженной базы, без домыслов.
+                <ShieldCheck className="size-4 shrink-0 text-accent" /> Все требования — только из проверенных данных университетов.
               </p>
             </div>
             <div className="grid gap-3">

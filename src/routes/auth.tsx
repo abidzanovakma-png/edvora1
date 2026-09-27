@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { GraduationCap, Loader2, Mail, ShieldCheck } from "lucide-react";
+import { BadgeCheck, GraduationCap, Loader2, Mail, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -194,9 +194,16 @@ function AuthPage() {
             ))}
           </ul>
         </div>
-        <p className="mt-10 text-xs text-muted-foreground">
-          Edvora · данные только из загруженной базы программ. <Link to="/about" className="font-medium text-primary hover:underline">Подробнее о нас</Link>
-        </p>
+        <div className="mt-10 flex max-w-lg items-start gap-3 rounded-xl border border-accent/30 bg-accent/10 p-4">
+          <BadgeCheck className="mt-0.5 size-5 shrink-0 text-accent" />
+          <div className="text-sm">
+            <p className="font-semibold text-foreground">Только проверенная информация</p>
+            <p className="mt-1 leading-relaxed text-muted-foreground">
+              Все требования, сроки и стоимость обучения в Edvora взяты из проверенных данных университетов.{" "}
+              <Link to="/about" className="font-medium text-primary hover:underline">Подробнее о нас</Link>
+            </p>
+          </div>
+        </div>
       </section>
 
       <section className="flex items-center justify-center">

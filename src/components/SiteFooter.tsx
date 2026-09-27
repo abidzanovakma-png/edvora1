@@ -63,7 +63,7 @@ export function SiteFooter({ className = "" }: { className?: string }) {
       </div>
       <div className="border-t border-border/70">
         <p className="mx-auto max-w-7xl px-4 py-4 text-xs text-muted-foreground sm:px-6">
-          © {year} Edvora · Требования программ показываются только из загруженной базы, без домыслов.
+          © {year} Edvora · Информация о программах — только из проверенных данных университетов.
         </p>
       </div>
     </footer>
