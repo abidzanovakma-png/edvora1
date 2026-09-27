@@ -6,6 +6,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import programsData from "@/data/programs.json";
+import { toast } from "sonner";
 import { isEmailNotConfirmed, translateAuthError } from "@/lib/authErrors";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -103,7 +104,12 @@ function AuthPage() {
           setMode("login");
           return;
         }
-        if (!data.session) {
+        if (data.session) {
+          // Подтверждение почты выключено: аккаунт создан, человек сразу входит на сайт.
+          toast.success(`Добро пожаловать в Edvora${name.trim() ? `, ${name.trim().split(" ")[0]}` : ""}!`, {
+            description: "Аккаунт создан. В следующий раз входите с этой почтой и паролем.",
+          });
+        } else {
           setMessage(`Мы отправили письмо на ${email}. Откройте ссылку из письма, чтобы подтвердить почту и войти. Проверьте папку «Спам».`);
           setResendEmail(email);
         }
