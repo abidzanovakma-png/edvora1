@@ -34,6 +34,7 @@ import { NativeSelect, StatusSelect } from "@/components/StatusSelect";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SiteFooter } from "@/components/SiteFooter";
 import { AssistantChat } from "@/components/AssistantChat";
+import { CountryBadge } from "@/components/CountryBadge";
 import { TaskCalendar } from "@/components/TaskCalendar";
 import { downloadIcs, googleCalendarUrl } from "@/lib/calendarExport";
 import * as repo from "@/lib/repo";
@@ -600,10 +601,11 @@ function FavoritesTab({ gender, universities, onUniversitiesChange, lists }: { g
             {universities.map((name) => {
               const info = findUniversity(name);
               return (
-                <li key={name} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 shadow-card">
-                  <div className="min-w-0">
-                    <p className="font-medium">{name}</p>
-                    {info && <p className="mt-0.5 text-xs text-muted-foreground">{info.country} · {info.city} · QS {info.rank}</p>}
+                <li key={name} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3 shadow-card">
+                  <CountryBadge country={info?.country} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display font-bold leading-snug">{name}</p>
+                    {info && <p className="mt-0.5 text-xs text-muted-foreground">{info.country}, {info.city} · {info.rank} место по QS</p>}
                   </div>
                   <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => void removeUniversity(name)} aria-label={`Убрать ${name} из избранного`}><Trash /></Button>
                 </li>
@@ -622,11 +624,12 @@ function FavoritesTab({ gender, universities, onUniversitiesChange, lists }: { g
             {lists.favoritePrograms.map((item) => {
               const application = lists.applicationFor(item.program_key);
               return (
-                <li key={item.program_key} className="rounded-xl border border-border bg-card p-4 shadow-card">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-medium">{item.program}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{item.university}</p>
+                <li key={item.program_key} className="rounded-2xl border border-border bg-card p-3 shadow-card">
+                  <div className="flex items-start gap-3">
+                    <CountryBadge country={findUniversity(item.university)?.country} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display font-bold leading-snug">{item.university}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{item.program}</p>
                     </div>
                     <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => void lists.toggleFavoriteProgram(item)} aria-label={`Убрать программу ${item.program} из избранного`}><Trash /></Button>
                   </div>
@@ -690,10 +693,15 @@ function ApplicationsTab({ gender, lists }: { gender: Gender; lists: Lists }) {
             <h3 className="mb-2 text-sm font-semibold text-muted-foreground">{label} · {items.length}</h3>
             <ul className="grid gap-2 md:grid-cols-2">
               {items.map((item) => (
-                <li key={item.program_key} className="rounded-xl border border-border bg-card p-4 shadow-card">
-                  <p className="font-medium">{item.program}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{item.university}</p>
-                  {item.status === "submitted" && item.submitted_at && <p className="mt-1 text-xs text-muted-foreground">Отправлена {formatDateTime(item.submitted_at)}</p>}
+                <li key={item.program_key} className={`rounded-2xl border bg-card p-3 shadow-card ${item.status === "submitted" ? "border-accent/50" : "border-border"}`}>
+                  <div className="flex items-start gap-3">
+                    <CountryBadge country={findUniversity(item.university)?.country} />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display font-bold leading-snug">{item.university}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{item.program}</p>
+                      {item.status === "submitted" && item.submitted_at && <p className="mt-1 text-xs font-medium text-accent">Отправлена {formatDateTime(item.submitted_at)}</p>}
+                    </div>
+                  </div>
                   <div className="mt-3">
                     <StatusSelect gender={gender} value={item.status} onChange={(next) => void lists.setApplicationStatus(item, next).then((ok) => { if (!ok) toast.error("Не удалось сохранить статус."); })} />
                   </div>

@@ -35,6 +35,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CompareBar, CompareDialog } from "@/components/CompareDialog";
 import { explainChances } from "@/lib/ai.functions";
+import { countryGlyph, countryTheme, fallbackTheme } from "@/lib/countryTheme";
 import { toast } from "sonner";
 import { programKey, useGender, useProgramLists, type ApplicationStatus, type Gender } from "@/lib/userData";
 import * as repo from "@/lib/repo";
@@ -479,6 +480,12 @@ const categoryStyles = {
   Reach: "bg-muted text-foreground",
 } as const;
 
+const categoryText = {
+  Safety: "text-emerald-700",
+  Match: "text-indigo-700",
+  Reach: "text-rose-700",
+} as const;
+
 const statusStyles = {
   pass: "text-accent",
   below: "text-destructive",
@@ -527,16 +534,89 @@ function ExplainBlock({ explanation, onExplain }: { explanation?: Explanation; o
 }
 
 function ProgramCard({ program, assessment, onOpen, favorite, onFavorite, favoriteProgram, onFavoriteProgram, gender, status, onStatus, comparing, onCompare, explanation, onExplain }: ProgramCardProps) {
-  const rows = [
-    [GraduationCap, "Уровень", program.levels.join(", ")], [Languages, "Языки обучения", program.languages.join(", ")],
-    [BookOpen, "Специальности", program.majors.join(", ")],
-    [CircleGauge, "GPA", program.gpa], [null, "IELTS", program.ielts], [null, "TOEFL", program.toefl],
-    [BadgeDollarSign, "Стоимость", program.cost],
-  ] as const;
+  const theme = countryTheme[program.country] ?? fallbackTheme;
+  const glyph = countryGlyph[program.country] ?? "";
+  const criterion = (label: string) => assessment?.criteria.find((item) => item.label === label);
+  // В плитке — короткий порог («3.0+»), полный текст требования — во всплывающей подсказке.
+  const short = (min: number | null) => (min === null ? "нет порога" : `${min}+`);
+  const requirements = [
+    { label: "GPA", value: short(program.gpaMin), full: program.gpa, check: criterion("GPA") },
+    { label: "IELTS", value: short(program.ieltsMin), full: program.ielts, check: criterion("IELTS") },
+    { label: "TOEFL", value: short(program.toeflMin), full: program.toefl, check: criterion("TOEFL") },
+  ];
+  const extraMajors = program.majors.length - 2;
 
-  return <article className="card-elevate fade-up flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-card">
-    <div className="border-b border-border bg-muted/35 p-5"><div className="flex items-center justify-between gap-2"><span className="inline-flex rounded-full bg-secondary px-2 py-1 text-[10px] font-semibold text-secondary-foreground">{program.country}</span><div className="flex items-center gap-2">{assessment && <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold ${categoryStyles[assessment.category]}`}>{assessment.category}</span>}<Button type="button" variant="ghost" size="icon" className="size-8" onClick={onFavorite} title={favorite ? "Университет в избранном" : "Сохранить университет"} aria-label={favorite ? `Удалить ${program.university} из избранного` : `Добавить ${program.university} в избранное`} aria-pressed={favorite}><Heart className={favorite ? "fill-primary text-primary" : "text-muted-foreground"} /></Button><Button type="button" variant="ghost" size="icon" className="size-8" onClick={onFavoriteProgram} title={favoriteProgram ? "Программа в избранном" : "Сохранить программу"} aria-label={favoriteProgram ? `Удалить программу ${program.program} из избранного` : `Добавить программу ${program.program} в избранное`} aria-pressed={favoriteProgram}><Bookmark className={favoriteProgram ? "fill-primary text-primary" : "text-muted-foreground"} /></Button></div></div><h3 className="mt-3 font-display text-base font-bold">{program.university}</h3><p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-1"><MapPin className="size-3" />{program.city}</span><span>·</span><span className="flex items-center gap-1"><Medal className="size-3" />QS {program.rank}</span></p></div>
-    <div className="flex flex-1 flex-col gap-4 p-5"><p className="line-clamp-3 min-h-[3.75rem] text-sm text-muted-foreground">{program.program}</p><dl className="space-y-2.5 text-xs">{rows.map(([Icon, label, value]) => <div key={label} className="flex items-start gap-2">{Icon ? <Icon className="mt-0.5 size-3.5 shrink-0 text-accent" /> : <span className="w-3.5 shrink-0" />}<dt className="shrink-0 text-muted-foreground">{label}:</dt><dd className="line-clamp-2 font-medium">{value}</dd></div>)}</dl>{assessment && <div className="rounded-lg border border-border/70 bg-muted/25 p-3"><p className="mb-2 text-[10px] font-bold uppercase text-muted-foreground">Оценка профиля</p><dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl><p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p>{assessment.recommendations.length > 0 && <div className="mt-2 border-t border-border/60 pt-2"><p className="mb-1 text-[10px] font-bold uppercase text-muted-foreground">Рекомендации</p><ul className="list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-muted-foreground">{assessment.recommendations.map((tip) => <li key={tip}>{tip}</li>)}</ul></div>}{onExplain && <ExplainBlock explanation={explanation} onExplain={onExplain} />}</div>}<a href={program.website} target="_blank" rel="noopener noreferrer" className="mt-auto flex items-center gap-1.5 pt-2 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a><div className="grid gap-2 pt-2"><StatusSelect gender={gender} value={status} onChange={onStatus} /><div className="grid grid-cols-2 gap-2"><Button variant={comparing ? "secondary" : "outline"} onClick={onCompare} aria-pressed={comparing}><Scale /> {comparing ? "В сравнении" : "Сравнить"}</Button><Button variant="secondary" onClick={onOpen}>Подробнее</Button></div></div></div>
+  return <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-shadow hover:shadow-[var(--shadow-lift)]">
+    {/* Шапка в цветах страны: рейтинг QS крупно, иероглиф страны на фоне */}
+    <div className={`relative overflow-hidden bg-gradient-to-br ${theme} px-5 pb-4 pt-4 text-white`}>
+      {glyph && <span aria-hidden className="pointer-events-none absolute -bottom-6 -right-2 select-none font-display text-[7.5rem] font-bold leading-none text-white/10 transition-transform duration-500 group-hover:scale-105">{glyph}</span>}
+      <div className="relative flex items-start justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-white/85"><MapPin className="size-3.5" />{program.country}, {program.city}</p>
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={onFavorite} title={favorite ? "Университет в избранном" : "Сохранить университет"} aria-label={favorite ? `Удалить ${program.university} из избранного` : `Добавить ${program.university} в избранное`} aria-pressed={favorite} className="grid size-8 place-items-center rounded-full bg-white/15 backdrop-blur transition-colors hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+            <Heart className={`size-4 ${favorite ? "fill-white" : ""}`} />
+          </button>
+          <button type="button" onClick={onFavoriteProgram} title={favoriteProgram ? "Программа в избранном" : "Сохранить программу"} aria-label={favoriteProgram ? `Удалить программу ${program.program} из избранного` : `Добавить программу ${program.program} в избранное`} aria-pressed={favoriteProgram} className="grid size-8 place-items-center rounded-full bg-white/15 backdrop-blur transition-colors hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+            <Bookmark className={`size-4 ${favoriteProgram ? "fill-white" : ""}`} />
+          </button>
+        </div>
+      </div>
+      <div className="relative mt-5 flex items-end justify-between gap-3">
+        <p className="flex items-baseline gap-2">
+          <span className="font-display text-4xl font-bold leading-none">{program.rank}</span>
+          <span className="text-xs text-white/80">место в мире<br />по QS</span>
+        </p>
+        {assessment && <span className={`inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-bold ${categoryText[assessment.category]}`}>{assessment.category}</span>}
+      </div>
+    </div>
 
+    <div className="flex flex-1 flex-col gap-4 p-5">
+      <div>
+        <h3 className="font-display text-lg font-bold leading-snug">{program.university}</h3>
+        <p className="mt-1 line-clamp-2 min-h-10 text-sm text-muted-foreground">{program.program}</p>
+      </div>
+
+      {/* Требования: если профиль применён, плитка подсвечивается — проходит или нет */}
+      <dl className="grid grid-cols-3 gap-2">
+        {requirements.map(({ label, value, full, check }) => (
+          <div key={label} className={`rounded-xl border px-2 py-2.5 text-center ${check?.status === "pass" ? "border-accent/50 bg-accent/10" : check?.status === "below" ? "border-destructive/40 bg-destructive/5" : "border-transparent bg-muted"}`}>
+            <dt className="text-[11px] text-muted-foreground">{label}</dt>
+            <dd className={`mt-0.5 truncate font-display font-bold ${value === "нет порога" ? "text-xs leading-5" : "text-sm"}`} title={full}>{value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="flex items-center gap-3 rounded-xl bg-secondary/60 px-3 py-2.5">
+        <BadgeDollarSign className="size-5 shrink-0 text-primary" />
+        <div className="min-w-0">
+          <p className="font-display text-sm font-bold">от ${program.costMin.toLocaleString("ru-RU")} в год</p>
+          <p className="truncate text-[11px] text-muted-foreground" title={program.cost}>обучение и проживание</p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 text-[11px]">
+        {program.levels.map((item) => <span key={item} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5"><GraduationCap className="size-3 text-primary" />{item}</span>)}
+        {program.languages.map((item) => <span key={item} className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5"><Languages className="size-3 text-primary" />{item}</span>)}
+        {program.majors.slice(0, 2).map((item) => <span key={item} className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{item}</span>)}
+        {extraMajors > 0 && <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground" title={program.majors.slice(2).join(", ")}>+{extraMajors}</span>}
+      </div>
+
+      {assessment && <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
+        <p className="mb-2 text-xs font-semibold">Ваши шансы</p>
+        <dl className="space-y-1 text-[11px]">{assessment.criteria.map((item) => <div key={item.label} className="flex items-start justify-between gap-2"><dt className="text-muted-foreground">{item.label}</dt><dd className={`text-right font-medium ${statusStyles[item.status]}`}>{statusLabels[item.status]}</dd></div>)}</dl>
+        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">{assessment.comment}</p>
+        {assessment.recommendations.length > 0 && <div className="mt-2 border-t border-border/60 pt-2"><p className="mb-1 text-[11px] font-semibold">Что улучшить</p><ul className="list-disc space-y-1 pl-4 text-[11px] leading-relaxed text-muted-foreground">{assessment.recommendations.map((tip) => <li key={tip}>{tip}</li>)}</ul></div>}
+        {onExplain && <ExplainBlock explanation={explanation} onExplain={onExplain} />}
+      </div>}
+
+      <div className="mt-auto grid gap-2 pt-1">
+        <StatusSelect gender={gender} value={status} onChange={onStatus} />
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant={comparing ? "secondary" : "outline"} onClick={onCompare} aria-pressed={comparing}><Scale /> {comparing ? "В сравнении" : "Сравнить"}</Button>
+          <Button onClick={onOpen}>Подробнее</Button>
+        </div>
+        <a href={program.website} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 pt-1 text-xs font-medium text-accent hover:underline"><Globe className="size-3.5 shrink-0" /> Официальный сайт <ExternalLink className="size-3" /></a>
+      </div>
+    </div>
   </article>;
 }

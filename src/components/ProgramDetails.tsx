@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { guides, type Guide } from "@/data/countryGuides";
+import { countryTheme } from "@/lib/countryTheme";
 
 type Details = Record<string, string>;
 
@@ -36,11 +37,6 @@ export type DetailProgram = {
   details: Details;
 };
 
-const countryTheme: Record<string, string> = {
-  Китай: "from-[#8f1d2b] via-[#b4232f] to-[#e0733a]",
-  Япония: "from-[#1f2a55] via-[#3b3f7a] to-[#c2405a]",
-  "Южная Корея": "from-[#123a63] via-[#1f5f8b] to-[#3fa1a8]",
-};
 
 function SectionTitle({ icon: Icon, children }: { icon: typeof BookOpen; children: React.ReactNode }) {
   return (
