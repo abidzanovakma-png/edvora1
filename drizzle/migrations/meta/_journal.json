@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792416533791,
+      "tag": "0000_profiles_tasks_favorites_applications",
+      "breakpoints": true
+    }
+  ]
+}
