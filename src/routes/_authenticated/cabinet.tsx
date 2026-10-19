@@ -730,7 +730,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function StatTile({ icon: Icon, label, value, hint, alert }: { icon: typeof Heart; label: string; value: string; hint: string; alert?: boolean }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-card">
-      <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground"><Icon className="size-4 text-accent" /> {label}</p>
+      <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        <span className="grid size-7 place-items-center rounded-lg bg-secondary text-secondary-foreground"><Icon className="size-4" /></span> {label}
+      </p>
       <p className="mt-2 truncate font-display text-xl font-bold">{value}</p>
       <p className={`mt-0.5 truncate text-xs ${alert ? "font-medium text-destructive" : "text-muted-foreground"}`}>{hint}</p>
     </div>

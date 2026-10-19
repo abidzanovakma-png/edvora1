@@ -374,11 +374,14 @@ function Index() {
             </div>
             <div className="grid gap-3">
               {countries.map((item) => (
-                <div key={item} className="rounded-xl border border-border bg-card p-5 shadow-card">
-                  <p className="font-display text-lg font-bold">{item}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {programsData.filter((program) => program.country === item).length} программ в базе
-                  </p>
+                <div key={item} className="card-elevate flex items-center justify-between gap-4 rounded-xl border border-border border-l-4 border-l-primary bg-card p-5 shadow-card">
+                  <div>
+                    <p className="font-display text-lg font-bold">{item}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">программ в базе</p>
+                  </div>
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-secondary font-display text-lg font-bold text-secondary-foreground">
+                    {programsData.filter((program) => program.country === item).length}
+                  </span>
                 </div>
               ))}
             </div>
