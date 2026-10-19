@@ -57,9 +57,8 @@ const TABS = ["profile", "tasks", "favorites", "applications"] as const;
 type CabinetTab = (typeof TABS)[number];
 
 export const Route = createFileRoute("/_authenticated/cabinet")({
-  validateSearch: (search: Record<string, unknown>): { tab?: CabinetTab } => ({
-    tab: TABS.includes(search.tab as CabinetTab) ? (search.tab as CabinetTab) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { tab?: CabinetTab } =>
+    TABS.includes(search["tab"] as CabinetTab) ? { tab: search["tab"] as CabinetTab } : {},
   head: () => ({
     meta: [
       { title: "Личный кабинет — Edvora" },
