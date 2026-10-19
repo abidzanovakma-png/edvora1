@@ -19,12 +19,24 @@ export const DAILY_LIMITS = { chat: 20, explain: 30 } as const;
 
 /** Адрес шлюза Lovable AI (OpenAI-совместимый формат). */
 const DEFAULT_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-/** Модель: Claude Haiku 4.5 — быстрая и недорогая. */
-const DEFAULT_MODEL = "anthropic/claude-haiku-4.5";
+/**
+ * Названия моделей, которые пробуем по очереди: точный идентификатор Claude
+ * в шлюзе Lovable нигде не опубликован. Первая сработавшая модель
+ * запоминается, и дальше используется сразу она.
+ */
+const MODEL_CANDIDATES = [
+  "anthropic/claude-haiku-4.5",
+  "anthropic/claude-haiku-4-5",
+  "claude-haiku-4-5",
+  "anthropic/claude-sonnet-5",
+  "google/gemini-2.5-flash",
+];
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
 export class AiError extends Error {}
+
+let workingModel: string | null = null;
 
 /** Единственное место, где вызывается модель. */
 async function callModel(messages: ChatMessage[], maxTokens: number): Promise<string> {
@@ -32,26 +44,46 @@ async function callModel(messages: ChatMessage[], maxTokens: number): Promise<st
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new AiError("ИИ ещё не подключён к проекту (нет LOVABLE_API_KEY).");
   const url = process.env["LOVABLE_AI_GATEWAY_URL"] || DEFAULT_GATEWAY_URL;
-  const model = process.env["EDVORA_AI_MODEL"] || DEFAULT_MODEL;
+  const preferred = process.env["EDVORA_AI_MODEL"];
+  const candidates = [...new Set([preferred, workingModel, ...MODEL_CANDIDATES].filter((item): item is string => Boolean(item)))];
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.4 }),
-  });
+  let lastProblem = "";
+  for (const model of candidates) {
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature: 0.4 }),
+      });
+    } catch (error) {
+      console.error("[Edvora AI] network error", error);
+      throw new AiError("Сервер не смог связаться с ИИ. Попробуйте чуть позже.");
+    }
 
-  if (response.status === 429) throw new AiError("Сейчас слишком много запросов к ИИ. Попробуйте через минуту.");
-  if (response.status === 402) throw new AiError("ИИ временно недоступен: закончился лимит. Мы уже разбираемся.");
-  if (!response.ok) {
-    const details = await response.text().catch(() => "");
-    console.error("[Edvora AI] gateway error", response.status, details.slice(0, 500));
-    throw new AiError("ИИ не ответил. Попробуйте ещё раз чуть позже.");
+    if (response.status === 429) throw new AiError("Сейчас слишком много запросов к ИИ. Попробуйте через минуту.");
+    if (response.status === 402) throw new AiError("ИИ временно недоступен: закончились кредиты Lovable на ИИ.");
+    if (response.status === 401 || response.status === 403) {
+      const details = await response.text().catch(() => "");
+      console.error("[Edvora AI] auth error", response.status, details.slice(0, 500));
+      throw new AiError(`ИИ отклонил ключ доступа (код ${response.status}). Проверьте, что Lovable AI включён для проекта.`);
+    }
+    if (!response.ok) {
+      // 400 / 404 / 422 обычно значат «нет такой модели» — пробуем следующую.
+      const details = await response.text().catch(() => "");
+      console.error("[Edvora AI] gateway error", model, response.status, details.slice(0, 500));
+      lastProblem = `код ${response.status}: ${details.replace(/\s+/g, " ").slice(0, 160)}`;
+      if ([400, 404, 422].includes(response.status)) continue;
+      throw new AiError(`ИИ не ответил (${lastProblem}). Попробуйте ещё раз чуть позже.`);
+    }
+
+    const json = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const text = json.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new AiError("ИИ вернул пустой ответ. Попробуйте переформулировать вопрос.");
+    workingModel = model;
+    return text;
   }
-
-  const json = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  const text = json.choices?.[0]?.message?.content?.trim();
-  if (!text) throw new AiError("ИИ вернул пустой ответ. Попробуйте переформулировать вопрос.");
-  return text;
+  throw new AiError(`ИИ не ответил (${lastProblem || "нет подходящей модели"}). Пришлите этот текст разработчику.`);
 }
 
 // ---------- Контекст для модели ----------
@@ -114,7 +146,8 @@ const memoryUsage = new Map<string, number[]>();
 
 type Supa = SupabaseClient<Database>;
 
-async function checkAndCountUsage(supabase: Supa, userId: string, kind: Kind) {
+/** Проверяет лимит. Запрос записывается в счётчик только после успешного ответа ИИ. */
+async function checkUsage(supabase: Supa, userId: string, kind: Kind) {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const limit = DAILY_LIMITS[kind];
   const { count, error } = await supabase
@@ -125,16 +158,22 @@ async function checkAndCountUsage(supabase: Supa, userId: string, kind: Kind) {
     .gte("created_at", since);
 
   if (error) {
-    const key = `${userId}:${kind}`;
-    const recent = (memoryUsage.get(key) ?? []).filter((time) => time > Date.now() - 24 * 60 * 60 * 1000);
+    const recent = (memoryUsage.get(`${userId}:${kind}`) ?? []).filter((time) => time > Date.now() - 24 * 60 * 60 * 1000);
     if (recent.length >= limit) throw new AiError(limitMessage(kind));
-    memoryUsage.set(key, [...recent, Date.now()]);
-    return limit - recent.length - 1;
+    return { used: recent.length, table: false };
   }
-
   if ((count ?? 0) >= limit) throw new AiError(limitMessage(kind));
-  await supabase.from("ai_usage").insert({ user_id: userId, kind });
-  return limit - (count ?? 0) - 1;
+  return { used: count ?? 0, table: true };
+}
+
+async function recordUsage(supabase: Supa, userId: string, kind: Kind, usage: { used: number; table: boolean }) {
+  if (usage.table) {
+    await supabase.from("ai_usage").insert({ user_id: userId, kind });
+  } else {
+    const key = `${userId}:${kind}`;
+    memoryUsage.set(key, [...(memoryUsage.get(key) ?? []), Date.now()]);
+  }
+  return DAILY_LIMITS[kind] - usage.used - 1;
 }
 
 function limitMessage(kind: Kind) {
@@ -170,12 +209,13 @@ export const askAssistant = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => chatInput.parse(input))
   .handler(async ({ data, context }): Promise<AiResult> => {
     try {
-      const remaining = await checkAndCountUsage(context.supabase, context.userId, "chat");
+      const usage = await checkUsage(context.supabase, context.userId, "chat");
       const profile = await loadProfile(context.supabase, context.userId);
       const system = `${RULES}\n\n=== ПРОФИЛЬ СТУДЕНТА ===\n${profileContext(profile)}\n\n=== БАЗА ПРОГРАММ EDVORA ===\n${buildCatalogContext()}`;
       // Берём только последние сообщения, чтобы запрос не разрастался.
       const history = data.messages.slice(-10);
       const text = await callModel([{ role: "system", content: system }, ...history], 700);
+      const remaining = await recordUsage(context.supabase, context.userId, "chat", usage);
       return { ok: true, text, remaining };
     } catch (error) {
       return failure(error);
@@ -214,7 +254,7 @@ export const explainChances = createServerFn({ method: "POST" })
     try {
       const program = programsData.find((item) => `${item.university}::${item.program}` === data.programKey);
       if (!program) throw new AiError("Программа не найдена в базе.");
-      const remaining = await checkAndCountUsage(context.supabase, context.userId, "explain");
+      const usage = await checkUsage(context.supabase, context.userId, "explain");
 
       const criteria = data.criteria.map((item) => `- ${item.label}: ${item.status}${item.note ? ` (${item.note})` : ""}`).join("\n");
       const prompt = `Объясни студенту его шансы на эту программу.
@@ -237,6 +277,7 @@ ${criteria}
         ],
         350,
       );
+      const remaining = await recordUsage(context.supabase, context.userId, "explain", usage);
       return { ok: true, text, remaining };
     } catch (error) {
       return failure(error);
