@@ -8,6 +8,13 @@
       "when": 1792416533791,
       "tag": "0000_profiles_tasks_favorites_applications",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792418228239,
+      "tag": "0001_ai_usage",
+      "breakpoints": true
     }
   ]
 }
