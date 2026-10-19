@@ -20,6 +20,7 @@ import {
   Pencil,
   Plus,
   Send,
+  Sparkles,
   Trash,
   UserRound,
 } from "lucide-react";
@@ -32,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeSelect, StatusSelect } from "@/components/StatusSelect";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SiteFooter } from "@/components/SiteFooter";
+import { AssistantChat } from "@/components/AssistantChat";
 import { TaskCalendar } from "@/components/TaskCalendar";
 import { downloadIcs, googleCalendarUrl } from "@/lib/calendarExport";
 import * as repo from "@/lib/repo";
@@ -53,7 +55,7 @@ import {
   type TaskUrgency,
 } from "@/lib/userData";
 
-const TABS = ["profile", "tasks", "favorites", "applications"] as const;
+const TABS = ["profile", "assistant", "tasks", "favorites", "applications"] as const;
 type CabinetTab = (typeof TABS)[number];
 
 export const Route = createFileRoute("/_authenticated/cabinet")({
@@ -247,6 +249,7 @@ function CabinetPage() {
           <div className="overflow-x-auto pb-1">
             <TabsList className="h-10">
               <TabsTrigger value="profile" className="h-8 gap-1.5"><UserRound className="size-4" /> Профиль</TabsTrigger>
+              <TabsTrigger value="assistant" className="h-8 gap-1.5"><Sparkles className="size-4" /> ИИ-консультант</TabsTrigger>
               <TabsTrigger value="tasks" className="h-8 gap-1.5"><ClipboardList className="size-4" /> Задачи {openTasks.length > 0 && <span className="rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">{openTasks.length}</span>}</TabsTrigger>
               <TabsTrigger value="favorites" className="h-8 gap-1.5"><Heart className="size-4" /> Избранное</TabsTrigger>
               <TabsTrigger value="applications" className="h-8 gap-1.5"><Send className="size-4" /> Заявки</TabsTrigger>
@@ -255,6 +258,9 @@ function CabinetPage() {
 
           <TabsContent value="profile" className="mt-5">
             {profileLoaded ? <ProfileTab profile={profile} onSaved={setProfile} /> : <LoadingBlock />}
+          </TabsContent>
+          <TabsContent value="assistant" className="mt-5">
+            <AssistantChat />
           </TabsContent>
           <TabsContent value="tasks" className="mt-5">
             {tasksLoaded ? <TasksTab tasks={tasks} reload={loadTasks} /> : <LoadingBlock text="Загружаем задачи…" />}
