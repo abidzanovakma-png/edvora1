@@ -506,14 +506,14 @@ type ProgramCardProps = {
   onStatus: (status: ApplicationStatus | null) => void;
   comparing: boolean;
   onCompare: () => void;
-  explanation?: Explanation;
-  onExplain?: () => void;
+  explanation?: Explanation | undefined;
+  onExplain?: (() => void) | undefined;
 };
 
 type Explanation = { loading?: boolean; text?: string; error?: string };
 
 /** Блок «Почему такая оценка?» с объяснением от ИИ. */
-function ExplainBlock({ explanation, onExplain }: { explanation?: Explanation; onExplain: () => void }) {
+function ExplainBlock({ explanation, onExplain }: { explanation?: Explanation | undefined; onExplain: () => void }) {
   if (explanation?.text) {
     return (
       <div className="mt-2 rounded-md border border-accent/30 bg-accent/10 p-2.5">
