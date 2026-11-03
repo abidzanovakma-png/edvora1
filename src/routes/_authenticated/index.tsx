@@ -507,7 +507,7 @@ type ProgramCardProps = {
   comparing: boolean;
   onCompare: () => void;
   explanation?: Explanation | undefined;
-  onExplain?: () => void;
+  onExplain?: (() => void) | undefined;
 };
 
 type Explanation = { loading?: boolean; text?: string; error?: string };
